@@ -1,0 +1,60 @@
+[DEBUG] 2020-07-02 12:14:12 > The logger interface is initited ...
+[DEBUG] 2020-07-02 12:14:14 > The secret [11] is shared among [5] parties using p(x) = 11 - 34x^1 - 69x^2 + 44x^3
+[DEBUG] 2020-07-02 12:1[INFO] 2020-07-02 12:14:14 > Party Server [4] recieve [27473227] from ws://localhost:8004
+[INFO] 2020-07-02 12:14:14 > Message [27473228] is sent back to ws://localhost:80[INF[INFO] 2020-07-02 12:14:18 > Party Server [4] recieve [-43517966] from ws://localhost:8004
+[INFO] 2020-07-02 12:14:18 > Message [-43517965] is sent back to ws://localhos[INFO] 2[INFO] 2020-07-02 12:14:19 > Party Server [4] recieve [-51340267] from ws://localhost:8004
+[INFO] 2020-07-02 12:14:19 > Message [-51340266] is sent back to ws://localhost:8004
+07-02 12:14:14 > User send message [233651] to ws://localhost:8002
+[INFO] 2020-07-02 12:14:14 > User get message [0b111001000010110100] from ws://localhost:8002
+
+[INFO] 2020-07-02 12:14:14 > User send message [29447451] to ws://localhost:8003
+[INFO] 2020-07-02 12:14:14 > User get message [0b1110000010101010100011100] from ws://localhost:8003
+
+[INFO] 2020-07-02 12:14:14 > User send message [27473227] to ws://localhost:8004
+[INFO] 2020-07-02 12:14:14 > User get message [0b1101000110011010101001100] from ws://localhost:8004
+
+[INFO] 2020-07-02 12:14:14 > The shares [1243452, 33675139, 233651, 29447451, 27473227]
+[INFO] 2020-07-02 12:14:14 > The recover shares [(31, 1243453), (92, 33675140), (18, 233652), (88, 29447452), (86, 27473228)]
+[INFO] 2020-07-02 12:14:14 > Using data [(31, 1243453), (92, 33675140), (18, 233652), (88, 29447452), (86, 27473228)] to recover secret [11] vs [12.000000476837158]
+[DEBUG] 2020-07-02 12:14:18 > The secret [12] is shared among [5] parties using p(x) = 12 + 87x^1 + 49x^2 - 69x^3
+[DEBUG] 2020-07-02 12:14:18 > Participants  Idents: [31, 92, 18, 88, 86]
+[DEBUG] 2020-07-02 12:14:18 > Corresponding Shares: [-2005781, -53306720, -384954, -46634444, -43517966]
+[INFO] 2020-07-02 12:14:18 > User send message [-2005781] to ws://localhost:8000
+[INFO] 2020-07-02 12:14:18 > User get message [-0b111101001101100010100] from ws://localhost:8000
+
+[INFO] 2020-07-02 12:14:18 > User send message [-53306720] to ws://localhost:8001
+[INFO] 2020-07-02 12:14:18 > User get message [-0b11001011010110010101011111] from ws://localhost:8001
+
+[INFO] 2020-07-02 12:14:18 > User send message [-384954] to ws://localhost:8002
+[INFO] 2020-07-02 12:14:18 > User get message [-0b1011101111110111001] from ws://localhost:8002
+
+[INFO] 2020-07-02 12:14:18 > User send message [-46634444] to ws://localhost:8003
+[INFO] 2020-07-02 12:14:18 > User get message [-0b10110001111001010111001011] from ws://localhost:8003
+
+[INFO] 2020-07-02 12:14:18 > User send message [-43517966] to ws://localhost:8004
+[INFO] 2020-07-02 12:14:18 > User get message [-0b10100110000000100000001101] from ws://localhost:8004
+
+[INFO] 2020-07-02 12:14:18 > The shares [-2005781, -53306720, -384954, -46634444, -43517966]
+[INFO] 2020-07-02 12:14:18 > The recover shares [(31, -2005780), (92, -53306719), (18, -384953), (88, -46634443), (86, -43517965)]
+[INFO] 2020-07-02 12:14:18 > Using data [(31, -2005780), (92, -53306719), (18, -384953), (88, -46634443), (86, -43517965)] to recover secret [12] vs [13.0]
+[DEBUG] 2020-07-02 12:14:19 > The secret [13] is shared among [5] parties using p(x) = 13 + 32x^1 - 62x^2 - 80x^3
+[DEBUG] 2020-07-02 12:14:19 > Participants  Idents: [31, 92, 18, 88, 86]
+[DEBUG] 2020-07-02 12:14:19 > Corresponding Shares: [-2441857, -62816851, -486059, -54995059, -51340267]
+[INFO] 2020-07-02 12:14:19 > User send message [-2441857] to ws://localhost:8000
+[INFO] 2020-07-02 12:14:19 > User get message [-0b1001010100001010000000] from ws://localhost:8000
+
+[INFO] 2020-07-02 12:14:19 > User send message [-62816851] to ws://localhost:8001
+[INFO] 2020-07-02 12:14:19 > User get message [-0b11101111101000001001010010] from ws://localhost:8001
+
+[INFO] 2020-07-02 12:14:19 > User send message [-486059] to ws://localhost:8002
+[INFO] 2020-07-02 12:14:19 > User get message [-0b1110110101010101010] from ws://localhost:8002
+
+[INFO] 2020-07-02 12:14:19 > User send message [-54995059] to ws://localhost:8003
+[INFO] 2020-07-02 12:14:19 > User get message [-0b11010001110010100001110010] from ws://localhost:8003
+
+[INFO] 2020-07-02 12:14:19 > User send message [-51340267] to ws://localhost:8004
+[INFO] 2020-07-02 12:14:19 > User get message [-0b11000011110110001111101010] from ws://localhost:8004
+
+[INFO] 2020-07-02 12:14:19 > The shares [-2441857, -62816851, -486059, -54995059, -51340267]
+[INFO] 2020-07-02 12:14:19 > The recover shares [(31, -2441856), (92, -62816850), (18, -486058), (88, -54995058), (86, -51340266)]
+[INFO] 2020-07-02 12:14:19 > Using data [(31, -2441856), (92, -62816850), (18, -486058), (88, -54995058), (86, -51340266)] to recover secret [13] vs [13.999998092651367]

@@ -1,1 +1,5 @@
-[DEBUG] 2020-06-30 15:05:30 > The logger interface is initited ...
+[DEBUG] 2020-07-02 01:02:00 > The logger interface is initited ...
+[DEBUG] 2020-07-02 01:02:00 > The secret [10] is shared among [10] parties using p(x) = 10 - 88x^1 + 81x^2 - 73x^3
+[DEBUG] 2020-07-02 01:02:00 > Participants  Idents: [64, 96, 60, 11, 73, 8, 88, 58, 3, 83]
+[DEBUG] 2020-07-02 01:02:00 > Corresponding Shares: [-18810358, -63847670, -15481670, -88320, -27973006, -32886, -49127926, -13975786, -1496, -41189736]
+[INFO] 2020-07-02 01:02:00 > Using data [(73, -27973006), (3, -1496), (60, -15481670), (11, -88320), (83, -41189736)] to recover secret [10] vs [9.999999997206032]
