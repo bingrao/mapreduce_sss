@@ -25,7 +25,7 @@ class SecretShare:
         self.logging.debug(
             f"The secret [{secret}] is shared among [{nums_shares}] parties using p(x) = {str(polynomial_funcs)}")
         self.logging.debug(f"Participants  Idents: {list(x_values)}")
-        self.logging.debug(f"Corresponding Shares: {shares}")
+        self.logging.debug(f"Corresponding Shares: {shares}\n")
 
         return shares
 

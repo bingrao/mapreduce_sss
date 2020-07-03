@@ -11,7 +11,7 @@ def generate_random(min=1, max=100, nums=10):
 
 
 def generate_random_coefficients(secret, poly_order):
-    reg = np.append(secret, generate_random(min=-100, max=100, nums=poly_order))
+    reg = np.append(secret, generate_random(min=1, max=10, nums=poly_order))
     return reg
 
 

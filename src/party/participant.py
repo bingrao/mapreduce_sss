@@ -3,6 +3,8 @@ import websockets
 from utils.context import Context
 import ssl
 from utils.event import message_encode, message_decode, EventType
+import ast
+import numpy as np
 
 
 # A simple class stack that only allows pop and push operations
@@ -47,10 +49,10 @@ class ParticipantServer:
         left = self.data.pop()
         right = self.data.pop()
         if message["Type"] == self.event_type.add:
-            result = int(left["Value"], 2) + int(right["Value"], 2)
+            result = left["Value"] + right["Value"]
 
         if message["Type"] == self.event_type.sub:
-            result = int(left["Value"], 2) - int(right["Value"], 2)
+            result = left["Value"] - right["Value"]
 
         self.logging.info(
             f"Party Server [{self.sever_id}] recieve [{result}] from ws://{websocket._host}:{websocket._port}")
@@ -64,7 +66,24 @@ class ParticipantServer:
         pass
 
     async def match(self, message, websocket):
-        pass
+        # convert a string-of-list to a list
+        # for example: '[[1,2],[3,2]]' --> [[1, 2], [3, 2]]
+        # left = ast.literal_eval(self.data.pop()["Value"])
+        left = (self.data.pop()["Value"]).astype(np.uint64)
+        right = (self.data.pop()["Value"]).astype(np.uint64)
+        self.logging.debug(f"[{self.sever_id}]-Left Shares Message \n{left}")
+        self.logging.debug(f"[{self.sever_id}]-right Shares Message \n{right}")
+
+        bit_wise = left * right # element-wise product
+        self.logging.debug(f"[{self.sever_id}]-left bit_wise right \n{bit_wise}")
+
+        sum_bit_wise = bit_wise.sum(axis=1) # sum of each row
+        self.logging.debug(f"[{self.sever_id}]-left sum_bit_wise right {sum_bit_wise}")
+
+        result = np.prod(sum_bit_wise, axis=0) # Return the product of array elements over a given axis.
+
+        self.logging.info(f"Party Server [{self.sever_id}] send [{result}] to User from ws://{websocket._host}:{websocket._port}")
+        await websocket.send(message_encode(message["Type"], "Result", result))
 
     async def count(self, message, websocket):
         pass
@@ -82,7 +101,7 @@ class ParticipantServer:
         async for message in websocket:
             msg = message_decode(message)
             if msg["Type"] == self.event_type.data:
-                await self.data.push(msg)
+                self.data.push(msg)
                 logging.info(f"Data Size {self.data.size()}, {self.data}")
 
             if msg["Type"] == self.event_type.add or msg["Type"] == self.event_type.sub:
