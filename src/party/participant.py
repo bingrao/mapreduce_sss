@@ -2,6 +2,31 @@ import asyncio
 import websockets
 from utils.context import Context
 import ssl
+from utils.event import message_encode, message_decode, EventType
+
+
+# A simple class stack that only allows pop and push operations
+class Stack:
+
+    def __init__(self):
+        self.stack = []
+
+    def pop(self):
+        if len(self.stack) < 1:
+            return None
+        return self.stack.pop()
+
+    def peek(self):
+        return self.stack[0]
+
+    def push(self, item):
+        self.stack.append(item)
+
+    def size(self):
+        return len(self.stack)
+
+    def __len__(self):
+        return self.size()
 
 
 class ParticipantServer:
@@ -15,20 +40,71 @@ class ParticipantServer:
         self.loop = loop if loop is not None else asyncio.new_event_loop()
         self.cert_path = cert_path
         self.key_path = key_path
+        self.data = Stack()
+        self.event_type = EventType()
 
-    async def consumer(self, message, websocket):
-        msg = int(message, 2)
+    async def calc(self, message, websocket):
+        left = self.data.pop()
+        right = self.data.pop()
+        if message["Type"] == self.event_type.add:
+            result = int(left["Value"], 2) + int(right["Value"], 2)
+
+        if message["Type"] == self.event_type.sub:
+            result = int(left["Value"], 2) - int(right["Value"], 2)
+
         self.logging.info(
-            f"Party Server [{self.sever_id}] recieve [{msg}] from ws://{websocket._host}:{websocket._port}")
+            f"Party Server [{self.sever_id}] recieve [{result}] from ws://{websocket._host}:{websocket._port}")
 
-        greeting = msg + 1
+        greeting = message_encode(message["Type"], "Result", result)
 
-        await websocket.send(bin(greeting))
+        await websocket.send(greeting)
         self.logging.info(f"Message [{greeting}] is sent back to ws://{websocket._host}:{websocket._port}")
+
+    async def multiply(self, message, websocket):
+        pass
+
+    async def match(self, message, websocket):
+        pass
+
+    async def count(self, message, websocket):
+        pass
+
+    async def select(self, message, websocket):
+        pass
+
+    async def join(self, message, websocket):
+        pass
+
+    async def search(self, message, websocket):
+        pass
 
     async def consumer_handler(self, websocket, path):
         async for message in websocket:
-            await self.consumer(message, websocket)
+            msg = message_decode(message)
+            if msg["Type"] == self.event_type.data:
+                await self.data.push(msg)
+                logging.info(f"Data Size {self.data.size()}, {self.data}")
+
+            if msg["Type"] == self.event_type.add or msg["Type"] == self.event_type.sub:
+                await self.calc(msg, websocket)
+
+            if msg["Type"] == self.event_type.mul:
+                await self.multiply(msg, websocket)
+
+            if msg["Type"] == self.event_type.match:
+                await self.match(msg, websocket)
+
+            if msg["Type"] == self.event_type.count:
+                await self.count(msg, websocket)
+
+            if msg["Type"] == self.event_type.select:
+                await self.select(msg, websocket)
+
+            if msg["Type"] == self.event_type.join:
+                await self.join(msg, websocket)
+
+            if msg["Type"] == self.event_type.search:
+                await self.search(msg, websocket)
 
     def start(self):
 
