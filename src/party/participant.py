@@ -35,6 +35,7 @@ class ParticipantServer:
     def __init__(self, ctx, loop=None, cert_path: str = None, key_path: str = None):
         self.context = ctx
         self.logging = ctx.logger
+        self.nums_party = ctx.party_size
 
         self.sever_id = ctx.party_id
         self.host, self.port = ctx.partyServers[self.sever_id]
