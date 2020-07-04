@@ -1,13 +1,18 @@
-import json
 import pickle
 
 
-def message_encode(event, name, value):
-    return pickle.dumps({"Type": event, "Name": name, "Value": value})
+class Event:
+    def __init__(self):
+        # Event Type
+        self.type = EventType()
 
+    @staticmethod
+    def encode(event, name, value):
+        return pickle.dumps({"Type": event, "Name": name, "Value": value})
 
-def message_decode(message):
-    return pickle.loads(message)
+    @staticmethod
+    def decode(message):
+        return pickle.loads(message)
 
 
 class EventType:

@@ -3,8 +3,8 @@
 import asyncio
 import websockets
 from src.utils.secret_share import SecretShare
-from src.utils.common import lagrange_interpolate
-from src.utils.event import message_encode, message_decode, EventType
+from src.utils.common import generate_random, lagrange_interpolate
+from src.utils.event import Event
 from src.utils.embedding import Embedding
 from functools import partial
 import numpy as np
@@ -14,6 +14,10 @@ class UserClient:
     def __init__(self, ctx):
         self.context = ctx
         self.logging = ctx.logger
+
+        # User choose how many participants to share data,
+        # by default, a secret will be shared among all particpant servers,
+        # Then randomly choose a specified number of servers to recover data
         self.nums_party = self.context.config['nums_party']
 
         # self.party_idents = generate_random(nums=self.nums_party)
@@ -22,18 +26,18 @@ class UserClient:
         self.partyServers = [f"ws://{host}:{port}" for host, port in ctx.partyServers[:self.nums_party]]
         self.share_engine = SecretShare(ctx)
         self.poly_order = 1
-        self.event_type = EventType()
-        self.embedding = Embedding()
+        self.event = Event()
+        self.embedding = Embedding()  # embedding layer for string or numberic
 
-    async def match(self, op, left, right):
-        assert len(left) == len(right)
+    async def match(self, op, op1, op2):
+        assert len(op1) == len(op2)
 
-        length = 2*len(left) + 1
+        length = 2 * len(op1) + 1
 
-        left_vector = self.embedding.str_to_vector(left)
-        left_vector_size = left_vector.shape
-        right_vector = self.embedding.str_to_vector(right)
-        right_vector_size = right_vector.shape
+        op1_vector = self.embedding.str_to_vector(op1)
+        op1_vector_size = op1_vector.shape
+        op2_vector = self.embedding.str_to_vector(op2)
+        op2_vector_size = op2_vector.shape
 
         func_shares = partial(self.share_engine.create_shares,
                               poly_order=self.poly_order,
@@ -41,45 +45,45 @@ class UserClient:
                               idents_shares=self.party_idents)
 
         # Size (length_string * alphabet_size * nums_shares)
-        left_shares_vec = np.array([func_shares(x) for x in left_vector.ravel()],
-                                   dtype=np.int32).reshape((left_vector_size[0],left_vector_size[1],self.nums_party))
+        op1_shares_vec = np.array([func_shares(x) for x in op1_vector.ravel()],
+                                  dtype=np.int32).reshape((op1_vector_size[0], op1_vector_size[1], self.nums_party))
 
-        left_shares = [left_shares_vec[:, :, [idx]].reshape(left_vector_size) for idx in range(self.nums_party)]
+        op1_shares = [op1_shares_vec[:, :, [idx]].reshape(op1_vector_size) for idx in range(self.nums_party)]
 
         if self.context.isDebug:
-            self.logging.debug(f"The orignial left shares vector \n{left_shares_vec}")
-            for idx, share in enumerate(left_shares):
-                vec = str(left_vector).replace("\n", '')
+            self.logging.debug(f"The orignial op1 shares vector \n{op1_shares_vec}")
+            for idx, share in enumerate(op1_shares):
+                vec = str(op1_vector).replace("\n", '')
                 share = str(share).replace('\n', '')
-                self.logging.debug(f"Left-[{left}-{vec}]-[{idx}] distribute shares: {share}")
+                self.logging.debug(f"op1-[{op1}-{vec}]-[{idx}] distribute shares: {share}")
 
         # Size (length_string * alphabet_size * nums_shares)
-        right_shares_vec = np.array([func_shares(x) for x in right_vector.ravel()],
-                                    dtype=np.int32).reshape((right_vector_size[0],right_vector_size[1],self.nums_party))
+        op2_shares_vec = np.array([func_shares(x) for x in op2_vector.ravel()],
+                                  dtype=np.int32).reshape((op2_vector_size[0], op2_vector_size[1], self.nums_party))
 
-        right_shares = [right_shares_vec[:, :, [idx]].reshape(right_vector_size) for idx in range(self.nums_party)]
+        op2_shares = [op2_shares_vec[:, :, [idx]].reshape(op2_vector_size) for idx in range(self.nums_party)]
 
         if self.context.isDebug:
-            self.logging.debug(f"The orignial right shares vector \n{right_shares_vec}")
-            for idx, share in enumerate(right_shares):
-                vec = str(right_vector).replace("\n", '')
+            self.logging.debug(f"The orignial op2 shares vector \n{op2_shares_vec}")
+            for idx, share in enumerate(op2_shares):
+                vec = str(op2_vector).replace("\n", '')
                 share = str(share).replace('\n', '')
-                self.logging.debug(f"Right-[{right}-{vec}]-[{idx}] distribute shares: {share}")
+                self.logging.debug(f"op2-[{op2}-{vec}]-[{idx}] distribute shares: {share}")
 
-        await self.distribute("x", left_shares)
+        await self.distribute("x", op1_shares)
 
-        await self.distribute("x", right_shares)
+        await self.distribute("x", op2_shares)
 
         recover_shares = []
         for idx, uri in enumerate(self.partyServers):
             async with websockets.connect(uri) as websocket:
-                message = message_encode(op, "Result", 0)
+                message = self.event.encode(op, "Result", 0)
 
                 self.logging.debug(f"User send message message to {uri}")
                 # data sent to/(recieved from) servers must be bytes, str, or iterable
                 await websocket.send(message)
 
-                greeting = message_decode(await websocket.recv())  # String Format
+                greeting = self.event.decode(await websocket.recv())  # String Format
 
                 recover_shares.append((self.party_idents[idx], greeting["Value"]))
                 self.logging.debug(f"User reci message [{greeting}] from {uri}\n")
@@ -89,57 +93,94 @@ class UserClient:
         rec_secret = lagrange_interpolate(xs, ys)
 
         self.logging.info(
-            f"Recover secret [{right} {op} {left}] vs [{rec_secret}] Using data {[(x, y) for x, y in zip(xs, ys)]}")
+            f"Recover secret [{op2} {op} {op1}] vs [{rec_secret}] Using data {[(x, y) for x, y in zip(xs, ys)]}")
 
-    async def calc(self, op, left=13, right=5):
+    async def calc(self, op, op1=13, op2=5):
+        """
+        Parameters
+           op:  Supported Operation [add | sub | multiply]
+           op1: first operator
+           op2: send operator
+        """
 
-        # Create shares for input secret
-        secret_shares_x = self.share_engine.create_shares(secret=left,
-                                                          poly_order=self.poly_order,
-                                                          nums_shares=self.nums_party,
-                                                          idents_shares=self.party_idents)
-        await self.distribute("x", secret_shares_x)
+        # nums_server: How many number of servers selected to recover secret data.
+        # Its value is based on
+        #   1. the polynomial degree that used to encode share data;
+        #   2. the type of operation
 
-        # Create shares for input secret
-        secret_shares_y = self.share_engine.create_shares(secret=right,
-                                                          poly_order=self.poly_order,
-                                                          nums_shares=self.nums_party,
-                                                          idents_shares=self.party_idents)
-        await self.distribute("y", secret_shares_y)
+        if op == self.event.type.add:
+            nums_server = self.poly_order + 1
+            expected = op1 + op2
+            op_str = "+"
+        if op == self.event.type.sub:
+            nums_server = self.poly_order + 1
+            expected = op1 - op2
+            op_str = "-"
+        if op == self.event.type.mul:
+            nums_server = 2 * self.poly_order + 1
+            expected = op1 * op2
+            op_str = "*"
+        assert nums_server <= self.nums_party
 
+        # Create secret shares for op1
+        op1_shares = self.share_engine.create_shares(secret=op1,
+                                                     poly_order=self.poly_order,
+                                                     nums_shares=self.nums_party,
+                                                     idents_shares=self.party_idents)
+        # Send shares data to all participant servers
+        await self.distribute("op1", op1_shares)
+
+        # Create secret shares for op2
+        op2_shares = self.share_engine.create_shares(secret=op2,
+                                                     poly_order=self.poly_order,
+                                                     nums_shares=self.nums_party,
+                                                     idents_shares=self.party_idents)
+        # Send shares data to all participant servers
+        await self.distribute("op2", op2_shares)
+
+        # Send command to a specified number of participant servers
+        # to conduct an operation and then recieve results from these servers.
         recover_shares = []
-        for idx, uri in enumerate(self.partyServers):
+        for idx in generate_random(min=0, max=self.nums_party, nums=nums_server):
+            uri = self.partyServers[idx]
             async with websockets.connect(uri) as websocket:
-                message = message_encode(op, "Result", 0)
-
+                """
+                data sent to/(recieved from) servers must be bytes, str, or iterable
+                """
+                message = self.event.encode(op, "Result", 0)
                 self.logging.debug(f"User send message message to {uri}")
-                # data sent to/(recieved from) servers must be bytes, str, or iterable
                 await websocket.send(message)
 
-                greeting = message_decode(await websocket.recv())  # Binary Format
+                greeting = self.event.decode(await websocket.recv())  # Binary Format
+                self.logging.debug(f"User reci message from {uri}\n")
 
                 recover_shares.append((self.party_idents[idx], greeting["Value"]))
-                self.logging.debug(f"User reci message [{greeting}] from {uri}\n")
 
         xs = [idx for idx, _ in recover_shares]
         ys = [share for _, share in recover_shares]
-        rec_secret = lagrange_interpolate(xs, ys)
-
-        self.logging.info(
-            f"Recover secret [{right} {op} {left}] vs [{rec_secret}] Using data {[(x, y) for x, y in zip(xs, ys)]}")
+        result = lagrange_interpolate(xs, ys)
+        self.logging.debug(f"Using data {[(x, y) for x, y in zip(xs, ys)]}")
+        self.logging.info(f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}")
 
     async def distribute(self, label, secret_shares):
+        """
+        Distribute secret shares to corresponding participants
+        Paramters
+            label: a label name identifying the data
+            secret_shares: a list of secret shares
+        """
         for idx, uri in enumerate(self.partyServers):
             share = secret_shares[idx]
             async with websockets.connect(uri) as websocket:
-                message = message_encode(self.event_type.data, label, share)
+                message = self.event.encode(self.event.type.data, label, share)
                 # data sent to/(recieved from) servers must be bytes, str, or iterable
                 await websocket.send(message)
 
     async def producer_handler(self):
-        # await self.calc(self.event_type.sub, 15, 16)
-        await self.calc(self.event_type.add, 2, 3)
-        # await self.match(self.event_type.match, "DCAB", "DCAB")
+        await self.calc(self.event.type.sub, 15, 16)
+        await self.calc(self.event.type.add, 2, 3)
+        await self.calc(self.event.type.mul, 8, 56)
+        await self.match(self.event.type.match, "DCAB", "DCAB")
 
     def start(self):
         asyncio.get_event_loop().run_until_complete(self.producer_handler())

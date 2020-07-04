@@ -1,7 +1,7 @@
 import asyncio
 import websockets
 import ssl
-from src.utils.event import message_encode, message_decode, EventType
+from src.utils.event import Event
 
 import numpy as np
 
@@ -42,18 +42,21 @@ class PartyServer:
         self.cert_path = cert_path
         self.key_path = key_path
         self.data = Stack()
-        self.event_type = EventType()
+        self.event = Event()
 
     async def calc(self, message, websocket):
         left = self.data.pop()
         right = self.data.pop()
-        if message["Type"] == self.event_type.add:
+        if message["Type"] == self.event.type.add:
             result = left["Value"] + right["Value"]
 
-        if message["Type"] == self.event_type.sub:
+        if message["Type"] == self.event.type.sub:
             result = left["Value"] - right["Value"]
 
-        greeting = message_encode(message["Type"], "Result", result)
+        if message["Type"] == self.event.type.mul:
+            result = left["Value"] * right["Value"]
+
+        greeting = self.event.encode(message["Type"], "Result", result)
 
         await websocket.send(greeting)
 
@@ -76,7 +79,7 @@ class PartyServer:
 
         self.logging.debug(
             f"Party Server [{self.party_id}] send [{result}] to User from ws://{websocket._host}:{websocket._port}")
-        await websocket.send(message_encode(message["Type"], "Result", result))
+        await websocket.send(self.event.encode(message["Type"], "Result", result))
 
     async def count(self, message, websocket):
         pass
@@ -92,30 +95,28 @@ class PartyServer:
 
     async def consumer_handler(self, websocket, path):
         async for message in websocket:
-            msg = message_decode(message)
-            if msg["Type"] == self.event_type.data:
+            msg = self.event.decode(message)
+            if msg["Type"] == self.event.type.data:
                 self.data.push(msg)
-                self.logging.debug(f"Data Size {self.data.size()}")
 
-            if msg["Type"] == self.event_type.add or msg["Type"] == self.event_type.sub:
+            if msg["Type"] == self.event.type.add \
+                    or msg["Type"] == self.event.type.sub \
+                    or msg["Type"] == self.event.type.mul:
                 await self.calc(msg, websocket)
 
-            if msg["Type"] == self.event_type.mul:
-                await self.multiply(msg, websocket)
-
-            if msg["Type"] == self.event_type.match:
+            if msg["Type"] == self.event.type.match:
                 await self.match(msg, websocket)
 
-            if msg["Type"] == self.event_type.count:
+            if msg["Type"] == self.event.type.count:
                 await self.count(msg, websocket)
 
-            if msg["Type"] == self.event_type.select:
+            if msg["Type"] == self.event.type.select:
                 await self.select(msg, websocket)
 
-            if msg["Type"] == self.event_type.join:
+            if msg["Type"] == self.event.type.join:
                 await self.join(msg, websocket)
 
-            if msg["Type"] == self.event_type.search:
+            if msg["Type"] == self.event.type.search:
                 await self.search(msg, websocket)
 
     def start(self):

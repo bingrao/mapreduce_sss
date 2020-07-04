@@ -3,7 +3,7 @@ from src.party.party import PartyServer
 from multiprocessing import Process
 
 
-def start_process(ctx, party_id):  # pragma: no cover
+def start_stanadalone_process(ctx, party_id):  # pragma: no cover
     """
     helper function for spinning up a websocket participant
     """
@@ -23,5 +23,5 @@ if __name__ == "__main__":
     nums_server = ctx.nums_server
     logging.info(f"Start {nums_server} (<= {ctx.max_nums_server}) Websocket Servers. Press CTRL-C to stop.")
     for i in range(nums_server):
-        start_process(ctx, i)
+        start_stanadalone_process(ctx, i)
 
