@@ -3,7 +3,7 @@ import websockets
 from utils.context import Context
 import ssl
 from utils.event import message_encode, message_decode, EventType
-import ast
+
 import numpy as np
 
 
@@ -31,16 +31,21 @@ class Stack:
         return self.size()
 
 
-class ParticipantServer:
+class PartyServer:
     def __init__(self, ctx, loop=None, cert_path: str = None, key_path: str = None):
         self.context = ctx
         self.logging = ctx.logger
-        self.nums_party = ctx.party_size
 
-        self.sever_id = ctx.party_id
-        self.host, self.port = ctx.partyServers[self.sever_id]
+        self.sever_id = self.context.config['party_id']
+
+        if self.context.config['host'] is None and self.context.config['port'] is None:
+            self.host, self.port = ctx.partyServers[self.sever_id]
+        else:
+            self.host = self.context.config['host']
+            self.port = self.context.config['port']
 
         self.loop = loop if loop is not None else asyncio.new_event_loop()
+
         self.cert_path = cert_path
         self.key_path = key_path
         self.data = Stack()
@@ -69,6 +74,7 @@ class ParticipantServer:
     async def match(self, message, websocket):
         # convert a string-of-list to a list
         # for example: '[[1,2],[3,2]]' --> [[1, 2], [3, 2]]
+        # import ast
         # left = ast.literal_eval(self.data.pop()["Value"])
         left = (self.data.pop()["Value"]).astype(np.uint64)
         right = (self.data.pop()["Value"]).astype(np.uint64)
@@ -143,10 +149,3 @@ class ParticipantServer:
             asyncio.get_event_loop().run_forever()
         except KeyboardInterrupt:
             self.logging.info("Websocket server stopped.")
-
-
-if __name__ == "__main__":
-    ctx = Context()
-    logging = ctx.logger
-    partyServer = ParticipantServer(ctx)
-    partyServer.start()

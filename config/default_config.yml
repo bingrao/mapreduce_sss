@@ -1,0 +1,45 @@
+servers:
+  - host: "localhost"
+    port: 8000
+
+  - host: "localhost"
+    port: 8001
+
+  - host: "localhost"
+    port: 8002
+
+  - host: "localhost"
+    port: 8003
+
+  - host: "localhost"
+    port: 8004
+
+  - host: "localhost"
+    port: 8005
+
+  - host: "localhost"
+    port: 8006
+
+  - host: "localhost"
+    port: 8007
+
+  - host: "localhost"
+    port: 8008
+
+  - host: "localhost"
+    port: 8009
+
+  - host: "localhost"
+    port: 8010
+
+  - host: "localhost"
+    port: 8011
+
+  - host: "localhost"
+    port: 8012
+
+  - host: "localhost"
+    port: 8013
+
+  - host: "localhost"
+    port: 8014

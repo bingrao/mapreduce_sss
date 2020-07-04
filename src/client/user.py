@@ -14,12 +14,13 @@ class UserClient:
     def __init__(self, ctx):
         self.context = ctx
         self.logging = ctx.logger
-        self.nums_party = ctx.party_size
+        self.nums_party = self.context.config['nums_party']
+
         # self.party_idents = generate_random(nums=self.nums_party)
         self.party_idents = np.array(range(1, self.nums_party + 1))
+
         self.partyServers = [f"ws://{host}:{port}" for host, port in ctx.partyServers[:self.nums_party]]
         self.share_engine = SecretShare(ctx)
-        self.host, self.port = ctx.userClient
         self.poly_order = 1
         self.event_type = EventType()
         self.embedding = Embedding()
@@ -146,9 +147,3 @@ class UserClient:
         # asyncio.get_event_loop().run_until_complete(start_server)
 
         asyncio.get_event_loop().run_until_complete(self.producer_handler())
-
-
-if __name__ == "__main__":
-    ctx = Context()
-    client = UserClient(ctx)
-    client.start()
