@@ -1,6 +1,6 @@
-from utils.polynomial import CustomPolynomial
-from utils.context import Context
-from utils.common import generate_random, generate_random_coefficients, lagrange_interpolate
+from src.utils.polynomial import CustomPolynomial
+from src.utils.context import Context
+from src.utils.common import generate_random, generate_random_coefficients, lagrange_interpolate
 
 
 class SecretShare:

@@ -1,5 +1,4 @@
 from numpy.polynomial.polynomial import Polynomial
-from numpy.polynomial import polyutils as pu
 
 
 class CustomPolynomial(Polynomial):

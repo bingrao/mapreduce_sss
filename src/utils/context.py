@@ -1,5 +1,5 @@
-from utils.argument import get_default_argument
-from utils.log import get_logger
+from src.utils.argument import get_default_argument
+from src.utils.log import get_logger
 from os import makedirs
 import random
 import numpy as np
@@ -24,23 +24,23 @@ def create_dir(dir_path):
 class Context:
     def __init__(self, desc):
 
-        assert desc == 'party' or desc == 'client'
+        assert desc == 'party' or desc == 'client' or desc == 'default'
 
-        self.description = desc
+        self.desc = desc
         # A dictionary of Config Parameters
-        self.config = get_default_argument(desc=self.description)
+        self.config = get_default_argument(desc=self.desc)
 
-        self.project_raw_dir = self.config['project_dir'] if self.config['project_dir'] != "" \
+        self.project_dir = self.config['project_dir'] if self.config['project_dir'] != "" \
             else str(BASE_DIR)
 
         self.project_log = self.config["project_log"]
         if not exists(self.project_log):
-            self.project_log = join(os.path.dirname(self.project_raw_dir), 'logs', 'log.txt')
+            self.project_log = join(os.path.dirname(self.project_dir), 'logs', 'log.txt')
             create_dir(os.path.dirname(self.project_log))
 
         # logger interface
         self.isDebug = self.config['debug']
-        self.logger = get_logger(self.description, self.project_log, self.isDebug)
+        self.logger = get_logger(self.desc, self.project_log, self.isDebug)
 
         if self.config['config'] is not None:
             with open(self.config['config']) as config_file:
@@ -60,7 +60,14 @@ class Context:
                                  ("localhost", 8008),
                                  ("localhost", 8009)]
 
-        self.nums_server = len(self.partyServers)
+        self.max_nums_server = len(self.partyServers)
+        if self.desc != 'client':
+            self.nums_server = self.config['nums_server']
+            assert self.nums_server <= self.max_nums_server
+
+        if self.desc == 'client':
+            self.nums_party = self.config['nums_party']
+            assert self.nums_party <= self.max_nums_server
 
         init_rng(seed=0)
         warnings.filterwarnings('ignore')

@@ -2,13 +2,13 @@
 
 import asyncio
 import websockets
-from utils.context import Context
-from secret_share import SecretShare
-from utils.common import generate_random, lagrange_interpolate
-from utils.event import message_encode, message_decode, EventType
-from utils.embedding import Embedding
+from src.utils.secret_share import SecretShare
+from src.utils.common import lagrange_interpolate
+from src.utils.event import message_encode, message_decode, EventType
+from src.utils.embedding import Embedding
 from functools import partial
 import numpy as np
+
 
 class UserClient:
     def __init__(self, ctx):
@@ -138,12 +138,8 @@ class UserClient:
 
     async def producer_handler(self):
         # await self.calc(self.event_type.sub, 15, 16)
-        # await self.calc(self.event_type.add, 2, 3)
-        await self.match(self.event_type.match, "DCAB", "DCAB")
+        await self.calc(self.event_type.add, 2, 3)
+        # await self.match(self.event_type.match, "DCAB", "DCAB")
 
     def start(self):
-        # self.logging.info(f"Start an User Server ws://{self.host}:{self.port}")
-        # start_server = websockets.serve(self.producer_handler, self.host, self.port)
-        # asyncio.get_event_loop().run_until_complete(start_server)
-
         asyncio.get_event_loop().run_until_complete(self.producer_handler())

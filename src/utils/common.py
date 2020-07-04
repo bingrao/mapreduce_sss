@@ -1,4 +1,4 @@
-from utils.polynomial import CustomPolynomial
+from src.utils.polynomial import CustomPolynomial
 import numpy as np
 from numpy.random import default_rng
 from scipy.interpolate import lagrange
