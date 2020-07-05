@@ -18,8 +18,6 @@ nums_party=$2
 nums_server=$2
 configFile=$3
 
-
-
 # shellcheck disable=SC2006
 RootPath=$(pwd)
 export PYTHONPATH=${PYTHONPATH}:${RootPath}
@@ -31,11 +29,6 @@ CfgPath=${RootPath}/config; [ -d "$CfgPath" ] || mkdir -p "$CfgPath"
 CurrentDate=$(date +%F)
 #ConfigFile=${CfgPath}/default_config.yml
 LogFile=${LogPath}/${CurrentDate}.log
-
-
-
-
-
 
 case ${target} in
    "party")

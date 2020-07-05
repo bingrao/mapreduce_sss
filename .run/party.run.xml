@@ -11,6 +11,7 @@
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/party.py" />
     <option name="PARAMETERS" value="-config config/default_config.yml -project_dir $PROJECT_DIR$ -nums_server 15" />
     <option name="SHOW_COMMAND_LINE" value="false" />
