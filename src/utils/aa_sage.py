@@ -1,3 +1,5 @@
+#
+# This version is implemented based sage math, but we do not this one.
 # http://blog.sina.com.cn/s/blog_9f0384e70101gj8x.html
 import logging
 import sage.all

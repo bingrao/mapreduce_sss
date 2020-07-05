@@ -1,7 +1,7 @@
 import asyncio
 import websockets
 import ssl
-from src.utils.event import Event
+from src.utils.event import MessageEvent
 
 import numpy as np
 
@@ -31,55 +31,50 @@ class Stack:
 
 
 class PartyServer:
-    def __init__(self, ctx, party_id, loop=None, cert_path: str = None, key_path: str = None):
+    def __init__(self, ctx, party_id, cert_path: str = None, key_path: str = None):
         self.context = ctx
         self.logging = ctx.logger
         self.party_id = party_id
         self.host, self.port = ctx.partyServers[self.party_id]
-
-        self.loop = loop if loop is not None else asyncio.new_event_loop()
-
         self.cert_path = cert_path
         self.key_path = key_path
         self.data = Stack()
-        self.event = Event()
+        self.event = MessageEvent()
 
     async def calc(self, message, websocket):
-        left = self.data.pop()
-        right = self.data.pop()
+        op2 = self.data.pop()
+        op1 = self.data.pop()
         if message["Type"] == self.event.type.add:
-            result = left["Value"] + right["Value"]
+            result = op1["Value"] + op2["Value"]
 
         if message["Type"] == self.event.type.sub:
-            result = left["Value"] - right["Value"]
+            result = op1["Value"] - op2["Value"]
 
         if message["Type"] == self.event.type.mul:
-            result = left["Value"] * right["Value"]
+            result = op1["Value"] * op2["Value"]
 
-        greeting = self.event.encode(message["Type"], "Result", result)
+        greeting = self.event.serialization(message["Type"], "Result", result)
 
+        # Send intermediate results to User
         await websocket.send(greeting)
 
-    async def multiply(self, message, websocket):
-        pass
-
     async def match(self, message, websocket):
-        left = (self.data.pop()["Value"]).astype(np.uint64)
-        right = (self.data.pop()["Value"]).astype(np.uint64)
-        self.logging.debug(f"[{self.party_id}]-Left Shares Message \n{left}")
-        self.logging.debug(f"[{self.party_id}]-right Shares Message \n{right}")
+        op2 = (self.data.pop()["Value"]).astype(np.uint64)
+        op1 = (self.data.pop()["Value"]).astype(np.uint64)
+        self.logging.debug(f"[{self.party_id}]-op1 Shares Message \n{op1}")
+        self.logging.debug(f"[{self.party_id}]-op2 Shares Message \n{op2}")
 
-        bit_wise = left * right  # element-wise product
-        self.logging.debug(f"[{self.party_id}]-left bit_wise right \n{bit_wise}")
+        bit_wise = op1 * op2  # element-wise product
+        self.logging.debug(f"[{self.party_id}]-op1 bit_wise op2 \n{bit_wise}")
 
         sum_bit_wise = bit_wise.sum(axis=1)  # sum of each row
-        self.logging.debug(f"[{self.party_id}]-left sum_bit_wise right {sum_bit_wise}")
+        self.logging.debug(f"[{self.party_id}]-op1 sum_bit_wise op2 {sum_bit_wise}")
 
         result = np.prod(sum_bit_wise, axis=0)  # Return the product of array elements over a given axis.
 
         self.logging.debug(
             f"Party Server [{self.party_id}] send [{result}] to User from ws://{websocket._host}:{websocket._port}")
-        await websocket.send(self.event.encode(message["Type"], "Result", result))
+        await websocket.send(self.event.serialization(message["Type"], "Result", result))
 
     async def count(self, message, websocket):
         pass
@@ -95,7 +90,7 @@ class PartyServer:
 
     async def consumer_handler(self, websocket, path):
         async for message in websocket:
-            msg = self.event.decode(message)
+            msg = self.event.deserialization(message)
             if msg["Type"] == self.event.type.data:
                 self.data.push(msg)
 
@@ -127,7 +122,7 @@ class PartyServer:
         else:
             ssl_context = None
 
-        self.logging.info(f"Start a participant Server ws://{self.host}:{self.port}")
+        self.logging.info(f"[{self.party_id}]-Start a participant Server ws://{self.host}:{self.port}")
         start_server = websockets.serve(self.consumer_handler, self.host, self.port, ssl=ssl_context)
 
         asyncio.get_event_loop().run_until_complete(start_server)

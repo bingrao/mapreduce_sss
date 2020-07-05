@@ -1,0 +1,45 @@
+servers:
+  - host: "c0"
+    port: 8000
+
+  - host: "c0"
+    port: 8001
+
+  - host: "c0"
+    port: 8002
+
+  - host: "c0"
+    port: 8003
+
+  - host: "c0"
+    port: 8004
+
+  - host: "c0"
+    port: 8005
+
+  - host: "c0"
+    port: 8006
+
+  - host: "c0"
+    port: 8007
+
+  - host: "c0"
+    port: 8008
+
+  - host: "c0"
+    port: 8009
+
+  - host: "c0"
+    port: 8010
+
+  - host: "c0"
+    port: 8011
+
+  - host: "c0"
+    port: 8012
+
+  - host: "c0"
+    port: 8013
+
+  - host: "c0"
+    port: 8014

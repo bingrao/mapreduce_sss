@@ -1,17 +1,20 @@
 import pickle
 
 
-class Event:
+class MessageEvent:
+    """
+    Message Event format: {"Type": type, "Name": name, "Value": value}
+    """
     def __init__(self):
         # Event Type
         self.type = EventType()
 
     @staticmethod
-    def encode(event, name, value):
+    def serialization(event, name, value):
         return pickle.dumps({"Type": event, "Name": name, "Value": value})
 
     @staticmethod
-    def decode(message):
+    def deserialization(message):
         return pickle.loads(message)
 
 

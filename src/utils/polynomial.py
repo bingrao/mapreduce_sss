@@ -3,12 +3,11 @@ from numpy.polynomial.polynomial import Polynomial
 
 class CustomPolynomial(Polynomial):
     def __init__(self, coefficients):
+        super(CustomPolynomial, self).__init__(coefficients)
         """
         input: coefficients are a list form of [a_0, a_1, ..., a_n]
         """
-        self.coefficients = coefficients
-        self.degree = len(self.coefficients)
-        super(CustomPolynomial, self).__init__(coefficients)
+        self.degree = len(self.coef)
 
     @classmethod
     def fromfilename(cls, *coefficients):
@@ -21,13 +20,13 @@ class CustomPolynomial(Polynomial):
     def __str__(self):
         res = ""
 
-        if self.coefficients[0] < 0:
-            res += " - " + str(-self.coefficients[0])
+        if self.coef[0] < 0:
+            res += " - " + str(-self.coef[0])
         else:
-            res += str(self.coefficients[0])
+            res += str(self.coef[0])
 
         for i in range(1, self.degree):
-            coeff = self.coefficients[i]
+            coeff = self.coef[i]
             if coeff < 0:
                 res += " - " + str(-coeff) + "x^" + str(i)
             else:
