@@ -5,7 +5,7 @@ def config_opts(parser):
     parser.add_argument('-config', '--config', required=True, help='Config file path')
     parser.add_argument('-project_dir', '--project_dir', type=str, default='')
     parser.add_argument('-project_log', '--project_log', type=str, default='')
-    parser.add_argument('-debug', '--debug', type=bool, default=False)
+    parser.add_argument('-debug', '--debug', type=bool, default=True)
 
 
 def party_opts(parser):

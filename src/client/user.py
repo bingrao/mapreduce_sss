@@ -57,7 +57,7 @@ class UserClient:
         """
         assert len(op1) >= len(op2), f"Constraint Condition: len[{op1}] >= len[{op2}] does not match"
 
-        nums_server = len(op1) + 1
+        nums_server = len(op2) + 1
         expected = op1.count(op2)
         op_str = "count"
 
@@ -74,7 +74,7 @@ class UserClient:
 
         automation_shares_vec = np.array([func_shares(secret=x, poly_order=2 * self.poly_order + idx)
                                           for idx, x in enumerate(automation_machine.ravel())]) \
-            .reshape((automation_machine, self.nums_party))
+            .reshape((automation_machine.size, self.nums_party))
 
         automation_shares = automation_shares_vec.transpose()  # nums_party * nums_node
 
@@ -104,23 +104,23 @@ class UserClient:
         op2_dist = np.tile(op2_index, self.nums_party).reshape((self.nums_party, op2_index.size))
         await self.distribute("op2", op2_dist)
 
-        recover_shares = await self.execute_command(op, nums_server)
+        recover_shares = await self.execute_command(op, self.nums_party)
 
         result = []
         for index in range(len(op2) + 1):
             node_state = [(ident, reg[index]) for ident, reg in recover_shares]
             node_value = lagrange_interpolate(node_state)
-            result.append(node_value)
+            result.append(round(node_value, 2))
 
         self.logging.debug(f"Using data {recover_shares}")
         self.logging.info(
-            f"Result[{op1} {op_str} {op2}]: expected {expected}, real {round(result, 2)}, diff {round(expected - result, 2)}")
+            f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}")
 
     async def match(self, op, op1, op2):
         assert len(op1) == len(op2), f"The lenght of [{op1}] and [{op2}] does not match"
 
-        # nums_server = 2 * len(op1) + 1
-        nums_server = self.nums_party
+        nums_server = 2 * len(op1) + 1
+        # nums_server = self.nums_party
         expected = 1.0 if op1 == op2 else 0.0
         op_str = "=="
         assert nums_server <= self.nums_party, \
@@ -259,7 +259,8 @@ class UserClient:
     async def producer_handler(self):
         # await self.test_match()
         # await self.test_calc()
-        await self.match(self.event.type.count, 'Alice Love Bob', 'Love')
+        # await self.count(self.event.type.count, 'Alice Love Bob', 'Love')
+        await self.match(self.event.type.match, "ACB", "ACB")
 
     def start(self):
         asyncio.get_event_loop().run_until_complete(self.producer_handler())

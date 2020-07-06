@@ -4,7 +4,7 @@ import numpy as np
 class Embedding:
     def __init__(self):
         # self.alphabet_list = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz '
-        self.alphabet_list = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz '
+        self.alphabet_list = 'ABCD'
         self.alphabet_size = len(self.alphabet_list)
         self.alphabet_vector = np.diag([1]*self.alphabet_size)
 

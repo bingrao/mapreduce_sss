@@ -85,15 +85,15 @@ class PartyServer:
 
         auto_machine = (self.data.pop()["Value"]).astype(np.uint64)
 
-        self.logging.debug(f"[{self.party_id}]-automation Shares Message \n{auto_machine}")
-        self.logging.debug(f"[{self.party_id}]-op1 Shares Message \n{op1}")
-        self.logging.debug(f"[{self.party_id}]-op2 Shares Message \n{op2}")
+        self.logging.debug(f"[{self.party_id}]-automation Shares Message[{auto_machine.shape}] {auto_machine}")
+        self.logging.debug(f"[{self.party_id}]-op2 Shares Message[{op2.shape}] {op2}")
+        self.logging.debug(f"[{self.party_id}]-op1 Shares Message[{op1.shape}] \n{op1}")
 
         for index in range(op1.shape[0]):
-            auto_machine[4] = auto_machine[4] + auto_machine[3]* op1[index, 3]
-            auto_machine[3] = auto_machine[3] * op1[index, 2]
-            auto_machine[2] = auto_machine[3] * op1[index, 1]
-            auto_machine[1] = auto_machine[3] * op1[index, 0]
+            auto_machine[1] = auto_machine[0] * op1[index, op2[0]]
+            auto_machine[2] = auto_machine[1] * op1[index, op2[1]]
+            auto_machine[3] = auto_machine[2] * op1[index, op2[2]]
+            auto_machine[4] = auto_machine[3] * op1[index, op2[3]] + auto_machine[4]
 
         result = auto_machine  # Return the product of array elements over a given axis.
 
