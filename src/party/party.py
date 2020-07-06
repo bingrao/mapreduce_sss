@@ -83,16 +83,19 @@ class PartyServer:
         # Target, for exampel: Bob Love Alice, , size len_char * dimension
         op1 = (self.data.pop()["Value"]).astype(np.uint64)
 
+        auto_machine = (self.data.pop()["Value"]).astype(np.uint64)
+
+        self.logging.debug(f"[{self.party_id}]-automation Shares Message \n{auto_machine}")
         self.logging.debug(f"[{self.party_id}]-op1 Shares Message \n{op1}")
         self.logging.debug(f"[{self.party_id}]-op2 Shares Message \n{op2}")
 
-        bit_wise = op1 * op2  # element-wise product
-        self.logging.debug(f"[{self.party_id}]-op1 bit_wise op2 \n{bit_wise}")
+        for index in range(op1.shape[0]):
+            auto_machine[4] = auto_machine[4] + auto_machine[3]* op1[index, 3]
+            auto_machine[3] = auto_machine[3] * op1[index, 2]
+            auto_machine[2] = auto_machine[3] * op1[index, 1]
+            auto_machine[1] = auto_machine[3] * op1[index, 0]
 
-        sum_bit_wise = bit_wise.sum(axis=1)  # sum of each row
-        self.logging.debug(f"[{self.party_id}]-op1 sum_bit_wise op2 {sum_bit_wise}")
-
-        result = np.prod(sum_bit_wise, axis=0)  # Return the product of array elements over a given axis.
+        result = auto_machine  # Return the product of array elements over a given axis.
 
         self.logging.debug(
             f"Party Server [{self.party_id}] send [{result}] to User from ws://{websocket._host}:{websocket._port}")
