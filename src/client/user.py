@@ -207,7 +207,7 @@ class UserClient:
         automation_shares_vec = np.array([func_shares(secret=x, poly_order=idx + 2)
                                           for idx, x in enumerate(automation_machine)]) \
             .reshape((len(automation_machine), self.nums_party))
-        automation_shares = automation_shares_vec.transpose().tolist()  # nums_party * nums_node
+        automation_shares = automation_shares_vec.transpose()  # 2D numpy array: nums_party * nums_node
 
         await self.distribute("state", automation_shares)
         if self.context.isDebug:
@@ -217,10 +217,11 @@ class UserClient:
         op1_vector = self.embedding.str_to_vector(op1)
         op1_vector_size = op1_vector.shape
 
-        # Size (length_string * alphabet_size * nums_shares)
+        # 3D numpy array, size (length_string * alphabet_size * nums_shares)
         op1_shares_vec = np.array([func_shares(secret=x, poly_order=self.poly_order) for x in op1_vector.ravel()],
                                   dtype=np.int32).reshape((op1_vector_size[0], op1_vector_size[1], self.nums_party))
 
+        # A list of 2D numpy array (length_string * alphabet_size), size nums_shares
         op1_shares = [op1_shares_vec[:, :, [idx]].reshape(op1_vector_size) for idx in range(self.nums_party)]
 
         if self.context.isDebug:
@@ -234,7 +235,9 @@ class UserClient:
 
         # ********************** Second operator
         op2_index = np.array([self.embedding.alphabet_list.index(char) for char in op2])
-        op2_dist = np.tile(op2_index, self.nums_party).reshape((self.nums_party, op2_index.size)).tolist()
+
+        # numpy array numpy_party * len_op2
+        op2_dist = np.tile(op2_index, self.nums_party).reshape((self.nums_party, op2_index.size))
         await self.distribute("op2", op2_dist)
 
         if self.context.isDebug:
@@ -247,20 +250,20 @@ class UserClient:
 
         result = []
         for index in range(nums_node):
-            node_state = [(ident, reg[index]) for ident, reg in recover_shares[:index+3]]
+            # Need at least [index+3] nodes to recover dataset
+            node_state = [(ident, reg[index]) for ident, reg in recover_shares[:index + 3]]
             node_value = interpolate(node_state)
-            self.logging.info(f"Node[{index}] = {node_value} is recovered by using {node_state}")
+            self.logging.debug(f"Node[{index}] = {node_value} is recovered by using {node_state}")
             result.append(node_value)
 
-        self.logging.info(
-            f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}")
+        self.logging.info(f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}")
 
     async def match(self, op, op1, op2):
         assert len(op1) == len(op2), f"The lenght of [{op1}] and [{op2}] does not match"
 
         nums_server = 2 * len(op1) + 1
         # nums_server = self.nums_party
-        expected = 1.0 if op1 == op2 else 0.0
+        expected = 1 if op1 == op2 else 0
         op_str = "=="
         assert nums_server <= self.nums_party, \
             f"Recover {op1, op2} need at least {nums_server} servers (<= {self.nums_party})"
@@ -308,11 +311,11 @@ class UserClient:
 
         recover_shares = await self.execute_command(op, nums_server)
 
-        result = lagrange_interpolate(recover_shares)
+        result = interpolate(recover_shares)
 
         self.logging.debug(f"Using data {recover_shares}")
         self.logging.info(
-            f"Result[{op1} {op_str} {op2}]: expected {expected}, real {round(result, 2)}, diff {round(expected - result, 2)}")
+            f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}, diff {expected - result}")
 
     async def calc(self, op, op1=13, op2=5):
         """
@@ -358,11 +361,11 @@ class UserClient:
         await self.distribute("op2", op2_shares)
 
         recover_shares = await self.execute_command(op, nums_server)
-        result = lagrange_interpolate(recover_shares)
+        result = interpolate(recover_shares)
 
         self.logging.debug(f"Using data {recover_shares}")
         self.logging.info(
-            f"Result[{op1} {op_str} {op2}]: expected {expected}, real {round(result, 2)}, diff {round(expected - result, 2)}")
+            f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}, diff {expected - result}")
 
     async def distribute(self, label, secret_shares):
         """
@@ -385,7 +388,7 @@ class UserClient:
 
     async def test_match(self):
         from functools import reduce
-        nums_str = 3
+        nums_str = 4
         for i in range(self.embedding.alphabet_size):
             xs = reduce(lambda x, y: x + y, [self.embedding.alphabet_list[i] for i in
                                              generate_random(min=0, max=self.embedding.alphabet_size, nums=nums_str)])
@@ -398,9 +401,9 @@ class UserClient:
     async def producer_handler(self):
         # await self.test_match()
         # await self.test_calc()
-        await self.aa_count_sage_standalone()
+        # await self.aa_count_sage_standalone()
         await self.count(self.event.type.count, 'Bob Love ALice', 'L')
-        # await self.match(self.event.type.match, "ABC", "BBC")
+        # await self.match(self.event.type.match, "AB", "AB")
 
     def start(self):
         asyncio.get_event_loop().run_until_complete(self.producer_handler())

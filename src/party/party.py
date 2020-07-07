@@ -77,18 +77,20 @@ class PartyServer:
         await websocket.send(self.event.serialization(message["Type"], "Result", result))
 
     async def count(self, message, websocket):
+        # 1D-numpy array, size len_char
         # Index of Pattern in the embedding, for example: Love, [11, 40, 47, 30]
         op2 = self.data.pop()["Value"]
 
-        # Target, for exampel: Bob Love Alice, , size len_char * dimension
+        # 2D-numpy array Target, size len_char * dimension
+        # for exampel: Bob Love Alice
         op1 = self.data.pop()["Value"]
 
-        # State of automation machine N0 -> N1 -> N2 -> N3 -> N4
-
+        # 1D-numpy array, size len_char + 1
+        # State of automation machine N0 -> N1 -> N2 -> N3 -> ... -> N4
         auto_machine = self.data.pop()["Value"]
 
-        self.logging.debug(f"[{self.party_id}]-automation Shares Message[{len(auto_machine)}] {auto_machine}")
-        self.logging.debug(f"[{self.party_id}]-op2 Shares Message[{len(op2)}] {op2}")
+        self.logging.debug(f"[{self.party_id}]-automation Shares Message[{auto_machine.shape}] {auto_machine}")
+        self.logging.debug(f"[{self.party_id}]-op2 Shares Message[{op2.shape}] {op2}")
         self.logging.debug(f"[{self.party_id}]-op1 Shares Message[{op1.shape}] \n{op1}")
         # Transimision function for corresponding input [V0, V1, V2, V3]:
         # N4 = N3 * V3 + N4
@@ -96,23 +98,27 @@ class PartyServer:
         # N2 = N1 * V1
         # N1 = N0 * V0
         # N0 = 1
-
         for index in range(op1.shape[0]):
             # auto_machine[4] = auto_machine[3] * op1[index, op2[3]] + auto_machine[4]
             # auto_machine[3] = auto_machine[2] * op1[index, op2[2]]
             # auto_machine[2] = auto_machine[1] * op1[index, op2[1]]
             # auto_machine[1] = auto_machine[0] * op1[index, op2[0]]
-            account = auto_machine[-1]
-            len_input = len(op2)
-            for x in range(len_input):
-                auto_machine[len_input-x] = auto_machine[len_input-x-1] * op1[index, op2[len_input-x-1]]
-            auto_machine[-1] = auto_machine[-1] + account
-            self.logging.debug(f"Party Server [{self.party_id}], input[{index}-{op1[index, ]}] transimision state {auto_machine}")
+
+            prev_account = auto_machine[-1]
+            # 3, 2, 1, 0, reversed order to make sure to
+            # use previous state in automation machine
+            for x in reversed(range(op2.size)):
+                auto_machine[x + 1] = auto_machine[x] * op1[index, op2[x]]
+            auto_machine[-1] = auto_machine[-1] + prev_account
+
+            self.logging.debug(f"Party Server [{self.party_id}], input[{index}-{op1[index, ]}] "
+                               f"transimision state {auto_machine}")
 
         result = auto_machine  # Return the product of array elements over a given axis.
 
         self.logging.debug(
             f"Party Server [{self.party_id}] send [{result}] to User from ws://{websocket._host}:{websocket._port}")
+
         await websocket.send(self.event.serialization(message["Type"], "Result", result))
 
     async def select(self, message, websocket):
