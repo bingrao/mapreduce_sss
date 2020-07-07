@@ -77,23 +77,36 @@ class PartyServer:
         await websocket.send(self.event.serialization(message["Type"], "Result", result))
 
     async def count(self, message, websocket):
-        # Pattern, for example: Love, size len_char * dimension
+        # Index of Pattern in the embedding, for example: Love, [11, 40, 47, 30]
         op2 = (self.data.pop()["Value"]).astype(np.uint64)
 
         # Target, for exampel: Bob Love Alice, , size len_char * dimension
         op1 = (self.data.pop()["Value"]).astype(np.uint64)
+
+        # State of automation machine N0 -> N1 -> N2 -> N3 -> N4
 
         auto_machine = (self.data.pop()["Value"]).astype(np.uint64)
 
         self.logging.debug(f"[{self.party_id}]-automation Shares Message[{auto_machine.shape}] {auto_machine}")
         self.logging.debug(f"[{self.party_id}]-op2 Shares Message[{op2.shape}] {op2}")
         self.logging.debug(f"[{self.party_id}]-op1 Shares Message[{op1.shape}] \n{op1}")
-
+        # Transimision function for corresponding input [V0, V1, V2, V3]:
+        # N0 = 1
+        # N1 = N0 * V0
+        # N2 = N1 * V1
+        # N3 = N2 * V2
+        # N4 = N3 * V3 + N4
         for index in range(op1.shape[0]):
-            auto_machine[1] = auto_machine[0] * op1[index, op2[0]]
-            auto_machine[2] = auto_machine[1] * op1[index, op2[1]]
-            auto_machine[3] = auto_machine[2] * op1[index, op2[2]]
-            auto_machine[4] = auto_machine[3] * op1[index, op2[3]] + auto_machine[4]
+            # auto_machine[1] = auto_machine[0] * op1[index, op2[0]]
+            # auto_machine[2] = auto_machine[1] * op1[index, op2[1]]
+            # auto_machine[3] = auto_machine[2] * op1[index, op2[2]]
+            # auto_machine[4] = auto_machine[3] * op1[index, op2[3]] + auto_machine[4]
+            account = auto_machine[-1]
+            len_input = op2.size
+            for x in range(len_input):
+                auto_machine[len_input-x] = auto_machine[len_input-x-1] * op1[index, op2[len_input-x-1]]
+            auto_machine[-1] = auto_machine[-1] + account
+            self.logging.debug(f"Party Server [{self.party_id}], input[{index}-{op1[index, ]}] transimision state {auto_machine}")
 
         result = auto_machine  # Return the product of array elements over a given axis.
 

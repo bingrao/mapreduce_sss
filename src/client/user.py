@@ -72,13 +72,15 @@ class UserClient:
         automation_machine = np.zeros(len(op2) + 1, dtype=np.int)  # Initial statement
         automation_machine[0] = 1
 
-        automation_shares_vec = np.array([func_shares(secret=x, poly_order=2 * self.poly_order + idx)
+        automation_shares_vec = np.array([func_shares(secret=x, poly_order=idx + 2)
                                           for idx, x in enumerate(automation_machine.ravel())]) \
             .reshape((automation_machine.size, self.nums_party))
 
         automation_shares = automation_shares_vec.transpose()  # nums_party * nums_node
 
         await self.distribute("state", automation_shares)
+        if self.context.isDebug:
+            self.logging.debug(f"The orignial automation shares vector \n{automation_shares}")
 
         # ********************** First Operator
         op1_vector = self.embedding.str_to_vector(op1)
@@ -103,6 +105,12 @@ class UserClient:
         op2_index = np.array([self.embedding.alphabet_list.index(char) for char in op2])
         op2_dist = np.tile(op2_index, self.nums_party).reshape((self.nums_party, op2_index.size))
         await self.distribute("op2", op2_dist)
+
+        if self.context.isDebug:
+            self.logging.debug(f"The orignial op2 shares vector \n{op2_dist}")
+            for idx, share in enumerate(op2_dist):
+                share = str(share).replace('\n', '')
+                self.logging.debug(f"op1-[{op2}]-[{idx}] distribute shares: {share}")
 
         recover_shares = await self.execute_command(op, self.nums_party)
 
@@ -259,8 +267,8 @@ class UserClient:
     async def producer_handler(self):
         # await self.test_match()
         # await self.test_calc()
-        # await self.count(self.event.type.count, 'Alice Love Bob', 'Love')
-        await self.match(self.event.type.match, "ACB", "ACB")
+        await self.count(self.event.type.count, 'ABCD', 'ABCD')
+        # await self.match(self.event.type.match, "ABC", "BBC")
 
     def start(self):
         asyncio.get_event_loop().run_until_complete(self.producer_handler())
