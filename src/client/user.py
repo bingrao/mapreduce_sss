@@ -265,6 +265,7 @@ class UserClient:
         for index in range(nums_node):
             # Need at least [index+3] nodes to recover dataset
             node_state = [(ident, reg[index]) for ident, reg in recover_shares[:get_nums_server(index)]]
+
             node_value = interpolate(node_state)
             self.logging.debug(f"Node[{index}] = {node_value} is recovered by using {node_state}")
             result.append(node_value)
@@ -415,7 +416,7 @@ class UserClient:
 
         start = time.time()
         # await self.test_match()
-        # await self.test_calc()
+        await self.test_calc()
         # await self.aa_count_sage_standalone()
         await self.count(self.event.type.count, 'Bob Love ALice', 'Love')
         # await self.match(self.event.type.match, "AB", "AB")
