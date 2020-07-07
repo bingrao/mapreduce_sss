@@ -197,7 +197,17 @@ class UserClient:
         nums_node = len(op2) + 1
         expected = op1.count(op2)
         op_str = "count"
-        max_nums_server = (2 + len(op2))*self.poly_order + 1
+        # The nums of nodes needed to recover each node node state based on
+        #  1. The length of input (pattern)
+        #  2. THe polynoimial degree to encode shares for each bit of char
+        #  For example:
+        #   -   len_input (1), degree (1) -> {0:3, 1:4}
+        #   -   len_input (1), degree (2) -> {0:5, 1:7}
+        #   -   len_input (1), degree (3) -> {0:7, 1:10}
+
+        get_nums_server = lambda x: (2 + x) * self.poly_order + 1
+
+        max_nums_server = get_nums_server(len(op2))
         assert max_nums_server <= self.nums_party, \
             f"The max nums of servers [{max_nums_server}] needed to recover data is less than {self.nums_party}"
 
@@ -207,7 +217,7 @@ class UserClient:
 
         # ********************** State autormation machine
         automation_machine = [1 if x == 0 else 0 for x in range(nums_node)]
-        automation_shares_vec = np.array([func_shares(secret=x, poly_order=idx + 2*self.poly_order)
+        automation_shares_vec = np.array([func_shares(secret=x, poly_order=idx + 2 * self.poly_order)
                                           for idx, x in enumerate(automation_machine)]) \
             .reshape((len(automation_machine), self.nums_party))
         automation_shares = automation_shares_vec.transpose()  # 2D numpy array: nums_party * nums_node
@@ -254,9 +264,9 @@ class UserClient:
         result = []
         for index in range(nums_node):
             # Need at least [index+3] nodes to recover dataset
-            node_state = [(ident, reg[index]) for ident, reg in recover_shares[:(2 + index)*self.poly_order + 1]]
+            node_state = [(ident, reg[index]) for ident, reg in recover_shares[:get_nums_server(index)]]
             node_value = interpolate(node_state)
-            self.logging.info(f"Node[{index}] = {node_value} is recovered by using {node_state}")
+            self.logging.debug(f"Node[{index}] = {node_value} is recovered by using {node_state}")
             result.append(node_value)
 
         self.logging.info(f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}")
