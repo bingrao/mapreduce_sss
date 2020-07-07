@@ -1,5 +1,4 @@
 import pickle
-from sage.all import *
 
 
 class MessageEvent:

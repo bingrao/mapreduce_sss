@@ -1,17 +1,16 @@
 from src.utils.argument import get_default_argument
 from src.utils.log import get_logger
 from os import makedirs
-import random
 import numpy as np
+from sage.all import *
+import os
 import warnings
 from os.path import dirname, abspath, join, exists
-import os
 
 BASE_DIR = dirname(dirname(abspath(__file__)))
 
 
 def init_rng(seed=0):
-    random.seed(seed)
     np.random.seed(seed)
     # torch.random.manual_seed(seed)
 
@@ -71,6 +70,10 @@ class Context:
 
         init_rng(seed=0)
         warnings.filterwarnings('ignore')
+        self.p = 2
+        self.n = 12
+        self.q = self.p ** self.n
+        self.zp = GF(random_prime(self.q))  # Finite Field
 
     def mapping_to_cuda(self, tensor):
         return tensor.to(self.device) if tensor is not None and self.is_cuda else tensor

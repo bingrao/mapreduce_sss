@@ -1,11 +1,11 @@
 from functools import reduce
-
 from src.utils.polynomial import CustomPolynomial
 import numpy as np
 from numpy.random import default_rng
 from scipy.interpolate import lagrange
 from decimal import *
-from sage.all import *
+from itertools import islice
+from sage.all import ZZ
 
 
 # find a number in a list
@@ -21,19 +21,23 @@ def find_in_list(tem, lxs):
 
 
 # generate n randome numbers, not repeated
-def generate_random_with_sage(n, Zp):
+def generate_random_with_sage(n, zp):
     l_xs = []
-    tem = Zp.random_element()  # Get next primary number in FP
+    tem = zp.random_element()
     while tem == 0:
-        tem = Zp.random_element()
+        tem = zp.random_element()
     l_xs.append(tem)
     while len(l_xs) < n:
-        tem = Zp.random_element()
+        tem = zp.random_element()
         while tem == 0:
-            tem = Zp.random_element()
+            tem = zp.random_element()
         if find_in_list(tem, l_xs) < 0:
             l_xs.append(tem)
     return l_xs
+
+# https://ask.sagemath.org/question/43657/list-of-random-non-zero-elements/
+# def generate_random_with_sage(nums, zp):
+#     return list(islice(filter(lambda x: x != 0, (zp.random_element() for _ in ZZ)), nums))
 
 
 def generate_random(min=1, max=100, nums=10):
@@ -42,8 +46,9 @@ def generate_random(min=1, max=100, nums=10):
     return numbers
 
 
-def generate_random_coefficients(secret, poly_order):
-    reg = np.append(secret, generate_random(min=1, max=10, nums=poly_order))
+def generate_random_coefficients(secret, poly_order, zp=None):
+    reg = np.append(secret, generate_random(min=1, max=10, nums=poly_order)) if zp is None \
+        else np.append(secret, generate_random_with_sage(poly_order, zp))
     return reg
 
 

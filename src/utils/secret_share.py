@@ -7,6 +7,7 @@ class SecretShare:
     def __init__(self, ctx):
         self.context = ctx
         self.logging = ctx.logger
+        self.zp = ctx.zp
 
     def create_shares(self, secret, poly_order=1, nums_shares=10, idents_shares=None):
 
@@ -14,7 +15,7 @@ class SecretShare:
         x_values = idents_shares if idents_shares is not None else list(range(1, nums_shares + 1))
 
         # A list of Coefficents of Polynomial functions: [secret, a1, a2, ..., an]
-        coefficients = generate_random_coefficients(secret, poly_order)
+        coefficients = generate_random_coefficients(secret, poly_order, self.zp)
 
         # Construct a polynomial function using a list of coefficents
         polynomial_funcs = CustomPolynomial(coefficients)

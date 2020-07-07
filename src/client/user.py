@@ -9,14 +9,14 @@ from src.utils.event import MessageEvent
 from src.utils.embedding import Embedding
 from functools import partial
 import numpy as np
-from sage.all import *
+import time
 
 
 class UserClient:
-    def __init__(self, ctx, poly_order=1):
+    def __init__(self, ctx, poly_order=2):
         self.context = ctx
         self.logging = ctx.logger
-        self.zp = GF(random_prime(2 ** 12))  # Finite Field
+        self.zp = ctx.zp  # Finite Field
         # User choose how many participants to share data,
         # by default, a secret will be shared among all particpant servers.
         self.nums_party = self.context.config['nums_party']
@@ -197,6 +197,9 @@ class UserClient:
         nums_node = len(op2) + 1
         expected = op1.count(op2)
         op_str = "count"
+        max_nums_server = (2 + len(op2))*self.poly_order + 1
+        assert max_nums_server <= self.nums_party, \
+            f"The max nums of servers [{max_nums_server}] needed to recover data is less than {self.nums_party}"
 
         func_shares = partial(self.share_engine.create_shares,
                               nums_shares=self.nums_party,
@@ -204,7 +207,7 @@ class UserClient:
 
         # ********************** State autormation machine
         automation_machine = [1 if x == 0 else 0 for x in range(nums_node)]
-        automation_shares_vec = np.array([func_shares(secret=x, poly_order=idx + 2)
+        automation_shares_vec = np.array([func_shares(secret=x, poly_order=idx + 2*self.poly_order)
                                           for idx, x in enumerate(automation_machine)]) \
             .reshape((len(automation_machine), self.nums_party))
         automation_shares = automation_shares_vec.transpose()  # 2D numpy array: nums_party * nums_node
@@ -251,9 +254,9 @@ class UserClient:
         result = []
         for index in range(nums_node):
             # Need at least [index+3] nodes to recover dataset
-            node_state = [(ident, reg[index]) for ident, reg in recover_shares[:index + 3]]
+            node_state = [(ident, reg[index]) for ident, reg in recover_shares[:(2 + index)*self.poly_order + 1]]
             node_value = interpolate(node_state)
-            self.logging.debug(f"Node[{index}] = {node_value} is recovered by using {node_state}")
+            self.logging.info(f"Node[{index}] = {node_value} is recovered by using {node_state}")
             result.append(node_value)
 
         self.logging.info(f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}")
@@ -399,11 +402,16 @@ class UserClient:
             await self.match(self.event.type.match, ys, ys)
 
     async def producer_handler(self):
+
+        start = time.time()
         # await self.test_match()
         # await self.test_calc()
         # await self.aa_count_sage_standalone()
-        await self.count(self.event.type.count, 'Bob Love ALice', 'L')
+        await self.count(self.event.type.count, 'Bob Love ALice', 'Love')
         # await self.match(self.event.type.match, "AB", "AB")
+
+        end = time.time()
+        self.logging.info(f"The execution time {end - start}")
 
     def start(self):
         asyncio.get_event_loop().run_until_complete(self.producer_handler())
