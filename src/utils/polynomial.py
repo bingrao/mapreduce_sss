@@ -1,21 +1,24 @@
-from numpy.polynomial.polynomial import Polynomial
+# from numpy.polynomial.polynomial import Polynomial
 
 
-class CustomPolynomial(Polynomial):
+class CustomPolynomial:
     def __init__(self, coefficients):
-        super(CustomPolynomial, self).__init__(coefficients)
+
         """
         input: coefficients are a list form of [a_0, a_1, ..., a_n]
         """
+        self.coef = coefficients
         self.degree = len(self.coef)
 
     @classmethod
     def fromfilename(cls, *coefficients):
         return cls(list(coefficients))
 
-    def __call__(self, arg):
-        # TODO here is a bug for single input value
-        return [int(v) for v in super(CustomPolynomial, self).__call__(arg)]
+    def __call__(self, x):
+        result = 0
+        for i in range(self.degree):
+            result = result + self.coef[i] * (x ** i)
+        return result
 
     def __str__(self):
         res = ""

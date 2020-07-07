@@ -20,7 +20,7 @@ class SecretShare:
         polynomial_funcs = CustomPolynomial(coefficients)
 
         # Apply this poly_funcs to each cloud identifier to a list of corresponding secret shares
-        shares = polynomial_funcs(x_values)
+        shares = [polynomial_funcs(x) for x in x_values]
 
         self.logging.debug(
             f"The secret [{secret}] is shared among [{nums_shares}] parties using p(x) = {str(polynomial_funcs)}")

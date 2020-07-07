@@ -5,6 +5,35 @@ import numpy as np
 from numpy.random import default_rng
 from scipy.interpolate import lagrange
 from decimal import *
+from sage.all import *
+
+
+# find a number in a list
+# not find, return -1
+def find_in_list(tem, lxs):
+    lenlist = len(lxs)
+    ret = -1
+    for x in range(lenlist):
+        if lxs[x] == tem:
+            ret = x
+            break
+    return ret
+
+
+# generate n randome numbers, not repeated
+def generate_random_with_sage(n, Zp):
+    l_xs = []
+    tem = Zp.random_element()  # Get next primary number in FP
+    while tem == 0:
+        tem = Zp.random_element()
+    l_xs.append(tem)
+    while len(l_xs) < n:
+        tem = Zp.random_element()
+        while tem == 0:
+            tem = Zp.random_element()
+        if find_in_list(tem, l_xs) < 0:
+            l_xs.append(tem)
+    return l_xs
 
 
 def generate_random(min=1, max=100, nums=10):
