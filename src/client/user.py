@@ -46,7 +46,7 @@ class UserClient:
 
         # A list of 2D numpy array (size: length_string * alphabet_size) containing shares for each party servers
         # List size: nums_share
-        tgt_shares = [tgt_shares_vec[:, :, [idx]].reshape(tgt_vector_size) for idx in range(nums_share)]
+        tgt_shares = [tgt_shares_vec[:, :, [idx]].reshape(tgt_vector_size).tolist() for idx in range(nums_share)]
         if self.context.isDebug:
             self.logging.debug(f"The orignial [{target}] shares vector \n{tgt_shares_vec}")
             for idx, share in enumerate(tgt_shares):
@@ -297,11 +297,9 @@ class UserClient:
         idents_share = self.party_idents[:nums_share]
 
         # nums_server = 2 * len(op1) + 1
-        nums_server = self.nums_party
-        expected = 1 if op1 == op2 else 0
-        op_str = "=="
-        assert nums_server <= self.nums_party, \
-            f"Recover {op1, op2} need at least {nums_server} servers (<= {self.nums_party})"
+        nums_server = nums_share
+        assert nums_server <= nums_share, \
+            f"Recover {op1, op2} need at least {nums_server} servers (<= {nums_share})"
 
         op1_shares = self.create_shares(op1, self.poly_order, nums_share, idents_share)
         await self.distribute("op1", op1_shares, nums_share)
@@ -313,6 +311,8 @@ class UserClient:
 
         result = interpolate(recover_shares)
 
+        expected = 1 if op1 == op2 else 0
+        op_str = "=="
         self.logging.debug(f"Using data {recover_shares}")
         self.logging.info(
             f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}, diff {expected - result}")
@@ -393,7 +393,7 @@ class UserClient:
 
     async def test_match(self):
         from functools import reduce
-        nums_str = 2
+        nums_str = 5
         for i in range(self.embedding.alphabet_size):
             xs = reduce(lambda x, y: x + y, [self.embedding.alphabet_list[i] for i in
                                              generate_random(min=0, max=self.embedding.alphabet_size, nums=nums_str)])
@@ -407,10 +407,10 @@ class UserClient:
 
         start = time.time()
         await self.test_match()
-        await self.test_calc()
+        # await self.test_calc()
         # await self.aa_count_sage_standalone()
-        await self.count(self.event.type.count, 'Bob Love ALice', 'L')
-        await self.match(self.event.type.match, "ABC", "ABC")
+        # await self.count(self.event.type.count, 'Bob Love ALice', 'L')
+        # await self.match(self.event.type.match, "ABC", "ABC")
 
         end = time.time()
         self.logging.info(f"The execution time {end - start}")

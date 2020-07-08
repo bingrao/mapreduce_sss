@@ -2,8 +2,19 @@ import asyncio
 import websockets
 import ssl
 from src.utils.event import MessageEvent
-import numpy as np
 from sage.all import *
+
+
+def sage_matrix_elementwise(M, N):
+    assert(M.parent() == N.parent())
+
+    nc, nr = M.ncols(), M.nrows()
+    A = copy(M.parent().zero())
+
+    for r in range(nr):
+        for c in range(nc):
+            A[r, c] = M[r, c] * N[r, c]
+    return A
 
 
 # A simple class stack that only allows pop and push operations
@@ -59,18 +70,22 @@ class PartyServer:
         await websocket.send(greeting)
 
     async def match(self, message, websocket):
-        op2 = (self.data.pop()["Value"]).astype(np.uint64)
-        op1 = (self.data.pop()["Value"]).astype(np.uint64)
+
+        # Using Sage Math Matrix to overcome data overflow issue
+        # Numpy and python int does not support data overflow issue
+        op2 = matrix(self.data.pop()["Value"])  # size: length_string * alphabet_size
+        op1 = matrix(self.data.pop()["Value"])  # size: length_string * alphabet_size
+
         self.logging.debug(f"[{self.party_id}]-op1 Shares Message \n{op1}")
         self.logging.debug(f"[{self.party_id}]-op2 Shares Message \n{op2}")
 
-        bit_wise = op1 * op2  # element-wise product
+        bit_wise = sage_matrix_elementwise(op1, op2)  # element-wise product
         self.logging.debug(f"[{self.party_id}]-op1 bit_wise op2 \n{bit_wise}")
 
-        sum_bit_wise = bit_wise.sum(axis=1)  # sum of each row
+        sum_bit_wise = sum(bit_wise.columns())  # sum of each row
         self.logging.debug(f"[{self.party_id}]-op1 sum_bit_wise op2 {sum_bit_wise}")
 
-        result = np.prod(sum_bit_wise, axis=0)  # Return the product of array elements over a given axis.
+        result = prod(sum_bit_wise)  # Return the product of array elements over a given axis.
 
         self.logging.debug(
             f"Party Server [{self.party_id}] send [{result}] to User from ws://{websocket._host}:{websocket._port}")
@@ -111,7 +126,7 @@ class PartyServer:
                 auto_machine[x + 1] = auto_machine[x] * op1[index, op2[x]]
             auto_machine[-1] = auto_machine[-1] + prev_account
 
-            self.logging.debug(f"Party Server [{self.party_id}], input[{index}-{op1[index, ]}] "
+            self.logging.debug(f"Party Server [{self.party_id}], input[{index}-{op1[index,]}] "
                                f"transimision state {auto_machine}")
 
         result = auto_machine  # Return the product of array elements over a given axis.
