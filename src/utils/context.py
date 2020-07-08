@@ -121,14 +121,15 @@ class Context:
     #     return list(islice(filter(lambda x: x != 0, (zp.random_element() for _ in ZZ)), nums))
     @staticmethod
     def generate_random(min=1, max=100, nums=10):
+        """
+        Generate random and no repeated [[nums]] integers that is between [[min]] and [[max]]
+        """
         rng = default_rng()
         numbers = rng.choice(np.arange(min, max), size=nums, replace=False)
         return numbers
 
-    def generate_random_coefficients(self, secret, poly_order, zp=None):
-        reg = np.append(secret, self.generate_random(min=1, max=10, nums=poly_order)) if zp is None \
-            else np.append(secret, self.generate_random_with_sage(poly_order, zp))
-        return reg
+    def generate_random_coefficients(self, secret, poly_order):
+        return np.append(secret, self.generate_random(min=1, max=10, nums=poly_order))
 
     # We provide three different kinds of lagrange interpolate method to recover data
     # shares: [(x1, y1), (x2, y2), ..., (xn, yn)]
@@ -138,8 +139,8 @@ class Context:
         ys = [share for _, share in shares]
         return CustomPolynomial(lagrange(xs, ys)).coef[-1]
 
-    def interpolate(self, shares, x=0):
-        x_values = [self.to_sage_integer(idx) for idx, _ in shares]
+    def interpolate(self, shares, x=0, overflow=True):
+        x_values = [self.to_sage_integer(idx) if overflow else idx for idx, _ in shares]
         y_values = [share for _, share in shares]
 
         def _basis(j):

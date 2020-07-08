@@ -19,7 +19,7 @@ class UserClient:
         # by default, a secret will be shared among all particpant servers.
         self.nums_party = self.context.config['nums_party']
 
-        self.party_idents = ctx.generate_random_with_sage(self.nums_party, self.zp)
+        self.party_idents = ctx.generate_random(min=1, max=100, nums=self.nums_party)
 
         self.partyServers = [f"ws://{host}:{port}" for host, port in ctx.partyServers[:self.nums_party]]
         self.share_engine = SecretShare(ctx)
@@ -201,7 +201,7 @@ class UserClient:
                 lxs.append(self.party_idents[y])
                 lys.append(l_NodesharesforC[y][xx])
 
-            l_node_rec[xx] = self.context.interpolate(list(zip(lxs, lys)))
+            l_node_rec[xx] = self.context.interpolate(list(zip(lxs, lys)), overflow=False)
             self.logging.info(f"l_Node[{xx}] = {l_node_rec[xx]} is recovered using lxs={lxs}, lys={lys}")
 
         self.logging.info(f"Reconstruct AA -> {l_node_rec}")
@@ -363,7 +363,7 @@ class UserClient:
         await self.distribute("op2", op2_shares, nums_share)
 
         recover_shares = await self.execute_command(op, nums_server=nums_share, nums_share=nums_share)
-        result = self.context.interpolate(recover_shares)
+        result = round(self.context.interpolate(recover_shares, overflow=False), 0)
 
         self.logging.debug(f"Using data {recover_shares}")
         self.logging.info(
@@ -387,7 +387,7 @@ class UserClient:
     async def test_calc(self):
         await self.calc(self.event.type.sub, 15, 16)
         await self.calc(self.event.type.add, 2, 3)
-        await self.calc(self.event.type.mul, 8, 56)
+        await self.calc(self.event.type.mul, 8000000000, 5600000000)
 
     async def test_match(self):
         from functools import reduce
@@ -405,8 +405,8 @@ class UserClient:
 
         start = time.time()
         await self.test_match()
-        # await self.test_calc()
-        # await self.aa_count_sage_standalone()
+        await self.test_calc()
+        await self.aa_count_sage_standalone()
         await self.string_count(self.event.type.string_count, 'Bob Love ALice', 'L')
         await self.match(self.event.type.match, "ABCed", "ABCed")
 

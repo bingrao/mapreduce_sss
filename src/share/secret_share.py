@@ -14,7 +14,7 @@ class SecretShare:
         x_values = idents_shares if idents_shares is not None else list(range(1, nums_shares + 1))
 
         # A list of Coefficents of Polynomial functions: [secret, a1, a2, ..., an]
-        coefficients = self.context.generate_random_coefficients(secret, poly_order, self.zp)
+        coefficients = self.context.generate_random_coefficients(secret, poly_order)
 
         # Construct a polynomial function using a list of coefficents
         polynomial_funcs = CustomPolynomial(coefficients)
@@ -50,6 +50,6 @@ if __name__ == "__main__":
     idx = context.generate_random(min=0, max=nums_cloud, nums=5)
     xs = [x_values[i] for i in idx]
     ys = [secret_shares[i] for i in idx]
-    rec_secret = context.lagrange_interpolate(xs, ys)
+    rec_secret = context.interpolate(xs, ys)
 
     logging.info(f"Using data {[(x, y) for x, y in zip(xs, ys)]} to recover secret [{secret}] vs [{rec_secret}]")

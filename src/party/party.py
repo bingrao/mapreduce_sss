@@ -59,16 +59,16 @@ class PartyServer:
         self.data.push(message)
 
     async def calc(self, message, websocket):
-        op2 = self._load_data()
-        op1 = self._load_data()
+        op2 = self._load_data()["Value"]
+        op1 = self._load_data()["Value"]
         if message["Type"] == self.event.type.add:
-            result = op1["Value"] + op2["Value"]
+            result = op1 + op2
 
         if message["Type"] == self.event.type.sub:
-            result = op1["Value"] - op2["Value"]
+            result = op1 - op2
 
         if message["Type"] == self.event.type.mul:
-            result = op1["Value"] * op2["Value"]
+            result = op1 * op2
 
         greeting = self.event.serialization(message["Type"], "Result", result)
 
@@ -99,7 +99,7 @@ class PartyServer:
         # Return the product of array elements over a given axis.
         # Here prod and element are used Sage built-in functions and type (IntegerMod_Int)
         # to git rid of data overflow issues resulted from a butch of integer's multipication.
-        result = prod([self.context.zp(x) for x in sum_bit_wise])
+        result = prod([self.context.to_sage_integer(x) for x in sum_bit_wise])
 
         self.logging.debug(
             f"Party Server [{self.party_id}] send [{result}] to User from ws://{websocket._host}:{websocket._port}")
@@ -116,9 +116,9 @@ class PartyServer:
 
         # 1D-numpy array, size len_char + 1
         # State of automation machine N0 -> N1 -> N2 -> N3 -> ... -> N4
-        auto_machine = self._load_data()["Value"]
+        auto_machine = [self.context.to_sage_integer(x) for x in self._load_data()["Value"]]
 
-        self.logging.debug(f"[{self.party_id}]-automation Shares Message[{auto_machine.shape}] {auto_machine}")
+        self.logging.debug(f"[{self.party_id}]-automation Shares Message[{len(auto_machine)}] {auto_machine}")
         self.logging.debug(f"[{self.party_id}]-op2 Shares Message[{op2.shape}] {op2}")
         self.logging.debug(f"[{self.party_id}]-op1 Shares Message[{op1.shape}] \n{op1}")
         # Transimision function for corresponding input [V0, V1, V2, V3]:
