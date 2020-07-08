@@ -307,7 +307,7 @@ class UserClient:
 
         recover_shares = await self.execute_command(op, nums_server=nums_share, nums_share=nums_share)
 
-        result = self.context.interpolate(recover_shares)
+        result = self.context.interpolate(recover_shares, overflow=True)
 
         expected = 1 if op1 == op2 else 0
         op_str = "=="

@@ -3,6 +3,7 @@ import websockets
 import ssl
 from event.event import MessageEvent
 from sage.all import *
+import numpy as np
 
 
 def sage_matrix_elementwise(M, N):
