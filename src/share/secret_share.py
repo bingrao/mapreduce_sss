@@ -1,6 +1,5 @@
-from src.utils.polynomial import CustomPolynomial
+from share.polynomial import CustomPolynomial
 from src.utils.context import Context
-from src.utils.common import generate_random, generate_random_coefficients, lagrange_interpolate
 
 
 class SecretShare:
@@ -15,7 +14,7 @@ class SecretShare:
         x_values = idents_shares if idents_shares is not None else list(range(1, nums_shares + 1))
 
         # A list of Coefficents of Polynomial functions: [secret, a1, a2, ..., an]
-        coefficients = generate_random_coefficients(secret, poly_order, self.zp)
+        coefficients = self.context.generate_random_coefficients(secret, poly_order, self.zp)
 
         # Construct a polynomial function using a list of coefficents
         polynomial_funcs = CustomPolynomial(coefficients)
@@ -39,7 +38,7 @@ if __name__ == "__main__":
     secret = 10
     nums_cloud = 10
 
-    x_values = generate_random(nums=nums_cloud)
+    x_values = context.generate_random(nums=nums_cloud)
 
     # x_values = np.array(range(1, nums_cloud + 1))
 
@@ -48,9 +47,9 @@ if __name__ == "__main__":
                                                nums_shares=nums_cloud,
                                                idents_shares=x_values)
 
-    idx = generate_random(min=0, max=nums_cloud, nums=5)
+    idx = context.generate_random(min=0, max=nums_cloud, nums=5)
     xs = [x_values[i] for i in idx]
     ys = [secret_shares[i] for i in idx]
-    rec_secret = lagrange_interpolate(xs, ys)
+    rec_secret = context.lagrange_interpolate(xs, ys)
 
     logging.info(f"Using data {[(x, y) for x, y in zip(xs, ys)]} to recover secret [{secret}] vs [{rec_secret}]")

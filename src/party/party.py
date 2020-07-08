@@ -1,7 +1,7 @@
 import asyncio
 import websockets
 import ssl
-from src.utils.event import MessageEvent
+from event.event import MessageEvent
 from sage.all import *
 
 

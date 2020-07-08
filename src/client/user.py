@@ -2,10 +2,8 @@
 
 import asyncio
 import websockets
-from src.utils.secret_share import SecretShare
-from src.utils.common import generate_random, lagrange_interpolate, generate_random_with_sage
-from src.utils.common import interpolate
-from src.utils.event import MessageEvent
+from share.secret_share import SecretShare
+from event.event import MessageEvent
 from src.utils.embedding import Embedding
 from functools import partial
 import numpy as np
@@ -21,7 +19,7 @@ class UserClient:
         # by default, a secret will be shared among all particpant servers.
         self.nums_party = self.context.config['nums_party']
 
-        self.party_idents = generate_random_with_sage(self.nums_party, self.zp)
+        self.party_idents = ctx.generate_random_with_sage(self.nums_party, self.zp)
 
         self.partyServers = [f"ws://{host}:{port}" for host, port in ctx.partyServers[:self.nums_party]]
         self.share_engine = SecretShare(ctx)
@@ -59,7 +57,7 @@ class UserClient:
         # Send command to a specified number of participant servers
         # to conduct an operation and then recieve results from these servers.
         recover_shares = []
-        for idx in generate_random(min=0, max=nums_share, nums=nums_server):
+        for idx in self.context.generate_random(min=0, max=nums_share, nums=nums_server):
             uri = self.partyServers[idx]
             async with websockets.connect(uri) as websocket:
                 """
@@ -203,7 +201,7 @@ class UserClient:
                 lxs.append(self.party_idents[y])
                 lys.append(l_NodesharesforC[y][xx])
 
-            l_node_rec[xx] = interpolate(list(zip(lxs, lys)))
+            l_node_rec[xx] = self.context.interpolate(list(zip(lxs, lys)))
             self.logging.info(f"l_Node[{xx}] = {l_node_rec[xx]} is recovered using lxs={lxs}, lys={lys}")
 
         self.logging.info(f"Reconstruct AA -> {l_node_rec}")
@@ -280,7 +278,7 @@ class UserClient:
             # Need at least [index+3] nodes to recover dataset
             node_state = [(ident, reg[index]) for ident, reg in recover_shares[:get_nums_server(index)]]
 
-            node_value = interpolate(node_state)
+            node_value = self.context.interpolate(node_state)
             self.logging.debug(f"Node[{index}] = {node_value} is recovered by using {node_state}")
             result.append(node_value)
 
@@ -309,7 +307,7 @@ class UserClient:
 
         recover_shares = await self.execute_command(op, nums_server=nums_share, nums_share=nums_share)
 
-        result = interpolate(recover_shares)
+        result = self.context.interpolate(recover_shares)
 
         expected = 1 if op1 == op2 else 0
         op_str = "=="
@@ -365,7 +363,7 @@ class UserClient:
         await self.distribute("op2", op2_shares, nums_share)
 
         recover_shares = await self.execute_command(op, nums_server=nums_share, nums_share=nums_share)
-        result = interpolate(recover_shares)
+        result = self.context.interpolate(recover_shares)
 
         self.logging.debug(f"Using data {recover_shares}")
         self.logging.info(
@@ -396,9 +394,9 @@ class UserClient:
         nums_str = 5
         for i in range(self.embedding.alphabet_size):
             xs = reduce(lambda x, y: x + y, [self.embedding.alphabet_list[i] for i in
-                                             generate_random(min=0, max=self.embedding.alphabet_size, nums=nums_str)])
+                                             self.context.generate_random(min=0, max=self.embedding.alphabet_size, nums=nums_str)])
             ys = reduce(lambda x, y: x + y, [self.embedding.alphabet_list[i] for i in
-                                             generate_random(min=0, max=self.embedding.alphabet_size, nums=nums_str)])
+                                             self.context.generate_random(min=0, max=self.embedding.alphabet_size, nums=nums_str)])
             await self.match(self.event.type.match, xs, ys)
             await self.match(self.event.type.match, xs, xs)
             await self.match(self.event.type.match, ys, ys)
