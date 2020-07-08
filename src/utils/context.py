@@ -73,7 +73,7 @@ class Context:
         self.p = 2
         self.n = 12
         self.q = self.p ** self.n
-        self.zp = GF(random_prime(self.q))  # Finite Field
+        self.zp = GF(random_prime(self.q, proof=False, lbound=self.q - 3))  # Finite Field
 
     def mapping_to_cuda(self, tensor):
         return tensor.to(self.device) if tensor is not None and self.is_cuda else tensor

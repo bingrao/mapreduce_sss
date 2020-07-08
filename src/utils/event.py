@@ -26,6 +26,7 @@ class EventType:
         self.mul = "Multiply"
         self.match = "Match"
         self.count = "Count"
+        self.string_count = "String_Count"
         self.select = "Select"
         self.join = "Join"
         self.search = "Range_Search"

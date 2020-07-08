@@ -52,9 +52,15 @@ class PartyServer:
         self.data = Stack()
         self.event = MessageEvent()
 
+    def _load_data(self, name=None):
+        return self.data.pop()
+
+    def _save_data(self, message):
+        self.data.push(message)
+
     async def calc(self, message, websocket):
-        op2 = self.data.pop()
-        op1 = self.data.pop()
+        op2 = self._load_data()
+        op1 = self._load_data()
         if message["Type"] == self.event.type.add:
             result = op1["Value"] + op2["Value"]
 
@@ -73,36 +79,44 @@ class PartyServer:
 
         # Using Sage Math Matrix to overcome data overflow issue
         # Numpy and python int does not support data overflow issue
-        op2 = matrix(self.data.pop()["Value"])  # size: length_string * alphabet_size
-        op1 = matrix(self.data.pop()["Value"])  # size: length_string * alphabet_size
+        op2 = self.data.pop()["Value"]  # Numpy-Style, size: length_string * alphabet_size
+        op1 = self.data.pop()["Value"]  # Numpy-Style, size: length_string * alphabet_size
+
+        # op2 = matrix(self._load_data()["Value"])  # size: length_string * alphabet_size
+        # op1 = matrix(self._load_data()["Value"])  # size: length_string * alphabet_size
 
         self.logging.debug(f"[{self.party_id}]-op1 Shares Message \n{op1}")
         self.logging.debug(f"[{self.party_id}]-op2 Shares Message \n{op2}")
 
-        bit_wise = sage_matrix_elementwise(op1, op2)  # element-wise product
+        bit_wise = op1 * op2  # Numpy-Style element-wise product
+        # bit_wise = sage_matrix_elementwise(op1, op2)  # Sage-Style element-wise product
         self.logging.debug(f"[{self.party_id}]-op1 bit_wise op2 \n{bit_wise}")
 
-        sum_bit_wise = sum(bit_wise.columns())  # sum of each row
+        sum_bit_wise = bit_wise.sum(axis=1)  # Numpy-Style sum of each row
+        # sum_bit_wise = sum(bit_wise.columns())  # Sage-Style sum of each row
         self.logging.debug(f"[{self.party_id}]-op1 sum_bit_wise op2 {sum_bit_wise}")
 
-        result = prod(sum_bit_wise)  # Return the product of array elements over a given axis.
+        # Return the product of array elements over a given axis.
+        # Here prod and element are used Sage built-in functions and type (IntegerMod_Int)
+        # to git rid of data overflow issues resulted from a butch of integer's multipication.
+        result = prod([self.context.zp(x) for x in sum_bit_wise])
 
         self.logging.debug(
             f"Party Server [{self.party_id}] send [{result}] to User from ws://{websocket._host}:{websocket._port}")
         await websocket.send(self.event.serialization(message["Type"], "Result", result))
 
-    async def count(self, message, websocket):
+    async def string_count(self, message, websocket):
         # 1D-numpy array, size len_char
         # Index of Pattern in the embedding, for example: Love, [11, 40, 47, 30]
-        op2 = self.data.pop()["Value"]
+        op2 = self._load_data()["Value"]
 
         # 2D-numpy array Target, size len_char * dimension
         # for exampel: Bob Love Alice
-        op1 = self.data.pop()["Value"]
+        op1 = self._load_data()["Value"]
 
         # 1D-numpy array, size len_char + 1
         # State of automation machine N0 -> N1 -> N2 -> N3 -> ... -> N4
-        auto_machine = self.data.pop()["Value"]
+        auto_machine = self._load_data()["Value"]
 
         self.logging.debug(f"[{self.party_id}]-automation Shares Message[{auto_machine.shape}] {auto_machine}")
         self.logging.debug(f"[{self.party_id}]-op2 Shares Message[{op2.shape}] {op2}")
@@ -136,6 +150,9 @@ class PartyServer:
 
         await websocket.send(self.event.serialization(message["Type"], "Result", result))
 
+    async def count(self, message, websocket):
+        pass
+
     async def select(self, message, websocket):
         pass
 
@@ -149,7 +166,7 @@ class PartyServer:
         async for message in websocket:
             msg = self.event.deserialization(message)
             if msg["Type"] == self.event.type.data:
-                self.data.push(msg)
+                self._save_data(msg)
 
             if msg["Type"] == self.event.type.add \
                     or msg["Type"] == self.event.type.sub \
@@ -161,6 +178,9 @@ class PartyServer:
 
             if msg["Type"] == self.event.type.count:
                 await self.count(msg, websocket)
+
+            if msg["Type"] == self.event.type.string_count:
+                await self.string_count(msg, websocket)
 
             if msg["Type"] == self.event.type.select:
                 await self.select(msg, websocket)

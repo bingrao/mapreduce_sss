@@ -46,7 +46,7 @@ class UserClient:
 
         # A list of 2D numpy array (size: length_string * alphabet_size) containing shares for each party servers
         # List size: nums_share
-        tgt_shares = [tgt_shares_vec[:, :, [idx]].reshape(tgt_vector_size).tolist() for idx in range(nums_share)]
+        tgt_shares = [tgt_shares_vec[:, :, [idx]].reshape(tgt_vector_size) for idx in range(nums_share)]
         if self.context.isDebug:
             self.logging.debug(f"The orignial [{target}] shares vector \n{tgt_shares_vec}")
             for idx, share in enumerate(tgt_shares):
@@ -210,7 +210,7 @@ class UserClient:
         self.logging.info("Reconstruct AA ending...")
         self.logging.info("-------------------------------------")
 
-    async def count(self, op, op1, op2):
+    async def string_count(self, op, op1, op2):
         """
         Paramters:
             -op: count operation
@@ -409,8 +409,8 @@ class UserClient:
         await self.test_match()
         # await self.test_calc()
         # await self.aa_count_sage_standalone()
-        # await self.count(self.event.type.count, 'Bob Love ALice', 'L')
-        # await self.match(self.event.type.match, "ABC", "ABC")
+        await self.string_count(self.event.type.string_count, 'Bob Love ALice', 'L')
+        await self.match(self.event.type.match, "ABCed", "ABCed")
 
         end = time.time()
         self.logging.info(f"The execution time {end - start}")
