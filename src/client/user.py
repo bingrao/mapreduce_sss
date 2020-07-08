@@ -13,7 +13,7 @@ import time
 
 
 class UserClient:
-    def __init__(self, ctx, poly_order=2):
+    def __init__(self, ctx, poly_order=1):
         self.context = ctx
         self.logging = ctx.logger
         self.zp = ctx.zp  # Finite Field
@@ -22,7 +22,6 @@ class UserClient:
         self.nums_party = self.context.config['nums_party']
 
         self.party_idents = generate_random_with_sage(self.nums_party, self.zp)
-        # self.party_idents = np.array(range(1, self.nums_party + 1))
 
         self.partyServers = [f"ws://{host}:{port}" for host, port in ctx.partyServers[:self.nums_party]]
         self.share_engine = SecretShare(ctx)
@@ -30,11 +29,37 @@ class UserClient:
         self.event = MessageEvent()
         self.embedding = Embedding()  # embedding layer for string or numberic
 
-    async def execute_command(self, op, nums_server):
+    def create_shares(self, target, poly_order, nums_share, idents_share):
+
+        # Partial function for shares create
+        func_shares = partial(self.share_engine.create_shares,
+                              poly_order=poly_order,
+                              nums_shares=nums_share,
+                              idents_shares=idents_share)
+        # 2D numpy arraw, size: length_string * alphabet_size
+        tgt_vector = self.embedding.to_vector(target)
+        tgt_vector_size = tgt_vector.shape
+
+        # 3D numpy array, Size: length_string * alphabet_size * nums_shares
+        tgt_shares_vec = np.array([func_shares(x) for x in tgt_vector.ravel()], dtype=np.int32) \
+            .reshape((tgt_vector_size[0], tgt_vector_size[1], nums_share))
+
+        # A list of 2D numpy array (size: length_string * alphabet_size) containing shares for each party servers
+        # List size: nums_share
+        tgt_shares = [tgt_shares_vec[:, :, [idx]].reshape(tgt_vector_size) for idx in range(nums_share)]
+        if self.context.isDebug:
+            self.logging.debug(f"The orignial [{target}] shares vector \n{tgt_shares_vec}")
+            for idx, share in enumerate(tgt_shares):
+                vec = str(tgt_vector).replace("\n", '')
+                share = str(share).replace('\n', '')
+                self.logging.debug(f"[{target}-{vec}]-[{idx}] distribute shares: {share}")
+        return tgt_shares
+
+    async def execute_command(self, op, nums_server, nums_share):
         # Send command to a specified number of participant servers
         # to conduct an operation and then recieve results from these servers.
         recover_shares = []
-        for idx in generate_random(min=0, max=self.nums_party, nums=nums_server):
+        for idx in generate_random(min=0, max=nums_share, nums=nums_server):
             uri = self.partyServers[idx]
             async with websockets.connect(uri) as websocket:
                 """
@@ -68,7 +93,7 @@ class UserClient:
             l_Filshares.append([])
 
         x = FiletoBestored[0]
-        vector = self.embedding.str_to_vector(x)[0]  # Get a vector representation for a char x
+        vector = self.embedding.to_vector(x)[0]  # Get a vector representation for a char x
         self.logging.info(f"The char [{x}] --> {vector}")
 
         l_y_vectorshares = []  # for one vector,or for one symbol
@@ -76,7 +101,7 @@ class UserClient:
             l_y_vectorshares.append([])
 
         for x in FiletoBestored:
-            vector = self.embedding.str_to_vector(x)[0]  # Get a vector representation for a char x
+            vector = self.embedding.to_vector(x)[0]  # Get a vector representation for a char x
 
             # secret share each vector
             l_y_vectorshares = []  # for one vector,or for one symbol
@@ -194,64 +219,53 @@ class UserClient:
         """
         assert len(op1) >= len(op2), f"Constraint Condition: len[{op1}] >= len[{op2}] does not match"
 
+        #  the nums of nodes in automation machine to do string_match and count algorithm.
         nums_node = len(op2) + 1
-        expected = op1.count(op2)
-        op_str = "count"
-        # The nums of nodes needed to recover each node node state based on
+
+        # The number of secret shares created for each secret.
+        # It's value means how many participant servers would recieve secret share data
+        nums_share = self.nums_party
+        idents_share = self.party_idents[:nums_share]
+        # The nums of participant server needed to recover each node node state based on
         #  1. The length of input (pattern)
         #  2. THe polynoimial degree to encode shares for each bit of char
         #  For example:
         #   -   len_input (1), degree (1) -> {0:3, 1:4}
         #   -   len_input (1), degree (2) -> {0:5, 1:7}
         #   -   len_input (1), degree (3) -> {0:7, 1:10}
-
+        # The above value indicates the at least number servers that we need, of course, we can
+        # use all participants servers to do recover job
         get_nums_server = lambda x: (2 + x) * self.poly_order + 1
 
         max_nums_server = get_nums_server(len(op2))
-        assert max_nums_server <= self.nums_party, \
-            f"The max nums of servers [{max_nums_server}] needed to recover data is less than {self.nums_party}"
+        assert max_nums_server <= nums_share, \
+            f"The max nums of servers [{max_nums_server}] needed to recover data is less than {nums_share}"
 
         func_shares = partial(self.share_engine.create_shares,
-                              nums_shares=self.nums_party,
-                              idents_shares=self.party_idents)
+                              nums_shares=nums_share,
+                              idents_shares=idents_share)
 
         # ********************** State autormation machine
         automation_machine = [1 if x == 0 else 0 for x in range(nums_node)]
         automation_shares_vec = np.array([func_shares(secret=x, poly_order=idx + 2 * self.poly_order)
                                           for idx, x in enumerate(automation_machine)]) \
-            .reshape((len(automation_machine), self.nums_party))
-        automation_shares = automation_shares_vec.transpose()  # 2D numpy array: nums_party * nums_node
+            .reshape((len(automation_machine), nums_share))
+        automation_shares = automation_shares_vec.transpose()  # 2D numpy array: nums_share * nums_node
 
-        await self.distribute("state", automation_shares)
+        await self.distribute("state", automation_shares, nums_share)
         if self.context.isDebug:
             self.logging.debug(f"The orignial automation shares vector \n{automation_shares}")
 
         # ********************** First Operator
-        op1_vector = self.embedding.str_to_vector(op1)
-        op1_vector_size = op1_vector.shape
-
-        # 3D numpy array, size (length_string * alphabet_size * nums_shares)
-        op1_shares_vec = np.array([func_shares(secret=x, poly_order=self.poly_order) for x in op1_vector.ravel()],
-                                  dtype=np.int32).reshape((op1_vector_size[0], op1_vector_size[1], self.nums_party))
-
-        # A list of 2D numpy array (length_string * alphabet_size), size nums_shares
-        op1_shares = [op1_shares_vec[:, :, [idx]].reshape(op1_vector_size) for idx in range(self.nums_party)]
-
-        if self.context.isDebug:
-            self.logging.debug(f"The orignial op1 shares vector \n{op1_shares_vec}")
-            for idx, share in enumerate(op1_shares):
-                vec = str(op1_vector).replace("\n", '')
-                share = str(share).replace('\n', '')
-                self.logging.debug(f"op1-[{op1}-{vec}]-[{idx}] distribute shares: {share}")
-
-        await self.distribute("op1", op1_shares)
+        op1_shares = self.create_shares(op1, self.poly_order, nums_share, idents_share)
+        await self.distribute("op1", op1_shares, nums_share)
 
         # ********************** Second operator
         op2_index = np.array([self.embedding.alphabet_list.index(char) for char in op2])
 
-        # numpy array numpy_party * len_op2
-        op2_dist = np.tile(op2_index, self.nums_party).reshape((self.nums_party, op2_index.size))
-        await self.distribute("op2", op2_dist)
+        # 2d numpy array numpy_share * len_op2
+        op2_dist = np.tile(op2_index, nums_share).reshape((nums_share, op2_index.size))
+        await self.distribute("op2", op2_dist, nums_share)
 
         if self.context.isDebug:
             self.logging.debug(f"The orignial op2 shares vector \n{op2_dist}")
@@ -259,7 +273,7 @@ class UserClient:
                 share = str(share).replace('\n', '')
                 self.logging.debug(f"op1-[{op2}]-[{idx}] distribute shares: {share}")
 
-        recover_shares = await self.execute_command(op, self.nums_party)
+        recover_shares = await self.execute_command(op, nums_server=nums_share, nums_share=nums_share)
 
         result = []
         for index in range(nums_node):
@@ -270,60 +284,32 @@ class UserClient:
             self.logging.debug(f"Node[{index}] = {node_value} is recovered by using {node_state}")
             result.append(node_value)
 
+        expected = op1.count(op2)
+        op_str = "count"
         self.logging.info(f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}")
 
     async def match(self, op, op1, op2):
         assert len(op1) == len(op2), f"The lenght of [{op1}] and [{op2}] does not match"
 
-        nums_server = 2 * len(op1) + 1
-        # nums_server = self.nums_party
+        # The number of secret shares created for each secret.
+        # It's value means how many participant servers would recieve secret share data
+        nums_share = self.nums_party
+        idents_share = self.party_idents[:nums_share]
+
+        # nums_server = 2 * len(op1) + 1
+        nums_server = self.nums_party
         expected = 1 if op1 == op2 else 0
         op_str = "=="
         assert nums_server <= self.nums_party, \
             f"Recover {op1, op2} need at least {nums_server} servers (<= {self.nums_party})"
 
-        op1_vector = self.embedding.str_to_vector(op1)
-        op1_vector_size = op1_vector.shape
-        op2_vector = self.embedding.str_to_vector(op2)
-        op2_vector_size = op2_vector.shape
+        op1_shares = self.create_shares(op1, self.poly_order, nums_share, idents_share)
+        await self.distribute("op1", op1_shares, nums_share)
 
-        func_shares = partial(self.share_engine.create_shares,
-                              poly_order=self.poly_order,
-                              nums_shares=self.nums_party,
-                              idents_shares=self.party_idents)
+        op2_shares = self.create_shares(op2, self.poly_order, nums_share, idents_share)
+        await self.distribute("op2", op2_shares, nums_share)
 
-        # Size (length_string * alphabet_size * nums_shares)
-        op1_shares_vec_tmp = np.array([func_shares(x) for x in op1_vector.ravel()], dtype=np.int32)
-
-        op1_shares_vec = op1_shares_vec_tmp.reshape((op1_vector_size[0], op1_vector_size[1], self.nums_party))
-
-        op1_shares = [op1_shares_vec[:, :, [idx]].reshape(op1_vector_size) for idx in range(self.nums_party)]
-
-        if self.context.isDebug:
-            self.logging.debug(f"The orignial op1 shares vector \n{op1_shares_vec}")
-            for idx, share in enumerate(op1_shares):
-                vec = str(op1_vector).replace("\n", '')
-                share = str(share).replace('\n', '')
-                self.logging.debug(f"op1-[{op1}-{vec}]-[{idx}] distribute shares: {share}")
-
-        # Size (length_string * alphabet_size * nums_shares)
-        op2_shares_vec = np.array([func_shares(x) for x in op2_vector.ravel()],
-                                  dtype=np.int32).reshape((op2_vector_size[0], op2_vector_size[1], self.nums_party))
-
-        op2_shares = [op2_shares_vec[:, :, [idx]].reshape(op2_vector_size) for idx in range(self.nums_party)]
-
-        if self.context.isDebug:
-            self.logging.debug(f"The orignial op2 shares vector \n{op2_shares_vec}")
-            for idx, share in enumerate(op2_shares):
-                vec = str(op2_vector).replace("\n", '')
-                share = str(share).replace('\n', '')
-                self.logging.debug(f"op2-[{op2}-{vec}]-[{idx}] distribute shares: {share}")
-
-        await self.distribute("op1", op1_shares)
-
-        await self.distribute("op2", op2_shares)
-
-        recover_shares = await self.execute_command(op, nums_server)
+        recover_shares = await self.execute_command(op, nums_server=nums_share, nums_share=nums_share)
 
         result = interpolate(recover_shares)
 
@@ -338,6 +324,10 @@ class UserClient:
            op1: first operator
            op2: send operator
         """
+        # The number of secret shares created for each secret.
+        # It's value means how many participant servers would recieve secret share data
+        nums_share = self.nums_party
+        idents_share = self.party_idents[:nums_share]
 
         # nums_server: How many number of servers selected to recover secret data.
         # Its value is based on
@@ -361,34 +351,35 @@ class UserClient:
         # Create secret shares for op1
         op1_shares = self.share_engine.create_shares(secret=op1,
                                                      poly_order=self.poly_order,
-                                                     nums_shares=self.nums_party,
-                                                     idents_shares=self.party_idents)
+                                                     nums_shares=nums_share,
+                                                     idents_shares=idents_share)
         # Send shares data to all participant servers
-        await self.distribute("op1", op1_shares)
+        await self.distribute("op1", op1_shares, nums_share)
 
         # Create secret shares for op2
         op2_shares = self.share_engine.create_shares(secret=op2,
                                                      poly_order=self.poly_order,
-                                                     nums_shares=self.nums_party,
-                                                     idents_shares=self.party_idents)
+                                                     nums_shares=nums_share,
+                                                     idents_shares=idents_share)
         # Send shares data to all participant servers
-        await self.distribute("op2", op2_shares)
+        await self.distribute("op2", op2_shares, nums_share)
 
-        recover_shares = await self.execute_command(op, nums_server)
+        recover_shares = await self.execute_command(op, nums_server=nums_share, nums_share=nums_share)
         result = interpolate(recover_shares)
 
         self.logging.debug(f"Using data {recover_shares}")
         self.logging.info(
             f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}, diff {expected - result}")
 
-    async def distribute(self, label, secret_shares):
+    async def distribute(self, label, secret_shares, nums_share):
         """
-        Distribute secret shares to all selected participants
+        Distribute secret shares to first [nums_share] selected participants
         Paramters
             label: a label name identifying the data
             secret_shares: a list of secret shares
+            nums_share: the number of partipant servers will recieve data
         """
-        for idx, uri in enumerate(self.partyServers):
+        for idx, uri in enumerate(self.partyServers[:nums_share]):
             share = secret_shares[idx]
             async with websockets.connect(uri) as websocket:
                 message = self.event.serialization(self.event.type.data, label, share)
@@ -402,7 +393,7 @@ class UserClient:
 
     async def test_match(self):
         from functools import reduce
-        nums_str = 4
+        nums_str = 2
         for i in range(self.embedding.alphabet_size):
             xs = reduce(lambda x, y: x + y, [self.embedding.alphabet_list[i] for i in
                                              generate_random(min=0, max=self.embedding.alphabet_size, nums=nums_str)])
@@ -415,11 +406,11 @@ class UserClient:
     async def producer_handler(self):
 
         start = time.time()
-        # await self.test_match()
+        await self.test_match()
         await self.test_calc()
         # await self.aa_count_sage_standalone()
-        await self.count(self.event.type.count, 'Bob Love ALice', 'Love')
-        # await self.match(self.event.type.match, "AB", "AB")
+        await self.count(self.event.type.count, 'Bob Love ALice', 'L')
+        await self.match(self.event.type.match, "ABC", "ABC")
 
         end = time.time()
         self.logging.info(f"The execution time {end - start}")

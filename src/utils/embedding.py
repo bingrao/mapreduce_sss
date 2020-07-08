@@ -6,19 +6,26 @@ class Embedding:
         # self.alphabet_list = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz '
         self.alphabet_list = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz '
         self.alphabet_size = len(self.alphabet_list)
-        self.alphabet_vector = np.diag([1]*self.alphabet_size)
+        self.alphabet_vector = np.diag([1] * self.alphabet_size)
 
         self.numeric_list = '0123456789'
         self.numeric_size = len(self.numeric_list)
-        self.numeric_vector = np.diag([1]*self.numeric_size)
+        self.numeric_vector = np.diag([1] * self.numeric_size)
+
+    def to_vector(self, target):
+        # TODO, add some check algorithms to check if input target is valid
+        if target.isdigit():
+            return self.nums_to_vector(target)
+        else:
+            return self.str_to_vector(target)
 
     def str_to_vector(self, string: str):
         index = [self.alphabet_list.index(char) for char in string]
-        return self.alphabet_vector[index, ]
+        return self.alphabet_vector[index,]
 
     def nums_to_vector(self, nums: str):
         index = [self.numeric_list.index(n) for n in nums]
-        return self.numeric_vector[index, ]
+        return self.numeric_vector[index,]
 
     @staticmethod
     def nums_to_binary(self, nums):

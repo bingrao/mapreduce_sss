@@ -3,8 +3,8 @@
 function help() {
      echo "Usage:  $0 target[party|client] nums[nums_server|nums_party] configFile" >&2
      echo "Example: "
-     echo "       - bash run.sh party config/c0_config.yml"
-     echo "       - bash run.sh client config/client_config.yml"
+     echo "       - bash run.sh party config/default_config.yml"
+     echo "       - bash run.sh client config/default_config.yml"
 }
 
 if [ "$#" -ne 3 ] ; then
