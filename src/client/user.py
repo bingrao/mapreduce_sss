@@ -4,7 +4,7 @@ import asyncio
 import websockets
 from src.share.secret_share import SecretShare
 from src.event.event import MessageEvent
-from src.event.message import Message
+from src.event.message import DataMessage, ControlMessage
 from src.utils.embedding import Embedding
 from functools import partial
 import numpy as np
@@ -54,6 +54,21 @@ class UserClient:
                 self.logging.debug(f"[{target}-{vec}]-[{idx}] distribute shares: {share}")
         return tgt_shares
 
+    async def distribute(self, label, secret_shares, nums_share):
+        """
+        Distribute secret shares to first [nums_share] selected participants
+        Paramters
+            label: a label name identifying the data
+            secret_shares: a list of secret shares with size [[nums_share]]
+            nums_share: the number of partipant servers will recieve data
+        """
+        for idx, uri in enumerate(self.partyServers[:nums_share]):
+            share = secret_shares[idx]
+            async with websockets.connect(uri) as websocket:
+                message = self.event.serialization(DataMessage(self.event.type.data, label, share))
+                # data sent to/(recieved from) servers must be bytes, str, or iterable
+                await websocket.send(message)
+
     async def execute_command(self, op, nums_server, nums_share):
         # Send command to a specified number of participant servers
         # to conduct an operation and then recieve results from these servers.
@@ -61,11 +76,10 @@ class UserClient:
         for idx in self.context.generate_random(min=0, max=nums_share, nums=nums_server):
             uri = self.partyServers[idx]
             async with websockets.connect(uri) as websocket:
-                """
-                data sent to/(recieved from) servers must be bytes, str, or iterable
-                """
-                message = self.event.serialization(Message(op, "Result", 0))
+                message = self.event.serialization(ControlMessage(op, "Result", 0))
                 self.logging.debug(f"User send message message to {uri}")
+                # send the command message to a participant server and
+                # switch the control to the event loop control
                 await websocket.send(message)
 
                 greeting = self.event.deserialization(await websocket.recv())
@@ -316,7 +330,7 @@ class UserClient:
         self.logging.info(
             f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}, diff {expected - result}")
 
-    async def calc(self, op, op1=13, op2=5):
+    async def calc(self, op, op1: int = 13, op2: int = 5):
         """
         Parameters
            op:  Supported Operation [add | sub | multiply]
@@ -370,21 +384,6 @@ class UserClient:
         self.logging.info(
             f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}, diff {expected - result}")
 
-    async def distribute(self, label, secret_shares, nums_share):
-        """
-        Distribute secret shares to first [nums_share] selected participants
-        Paramters
-            label: a label name identifying the data
-            secret_shares: a list of secret shares
-            nums_share: the number of partipant servers will recieve data
-        """
-        for idx, uri in enumerate(self.partyServers[:nums_share]):
-            share = secret_shares[idx]
-            async with websockets.connect(uri) as websocket:
-                message = self.event.serialization(Message(self.event.type.data, label, share))
-                # data sent to/(recieved from) servers must be bytes, str, or iterable
-                await websocket.send(message)
-
     async def test_calc(self):
         await self.calc(self.event.type.sub, 15, 16)
         await self.calc(self.event.type.add, 2, 3)
@@ -395,9 +394,13 @@ class UserClient:
         nums_str = 5
         for i in range(self.embedding.alphabet_size):
             xs = reduce(lambda x, y: x + y, [self.embedding.alphabet_list[i] for i in
-                                             self.context.generate_random(min=0, max=self.embedding.alphabet_size, nums=nums_str)])
+                                             self.context.generate_random(min=0,
+                                                                          max=self.embedding.alphabet_size,
+                                                                          nums=nums_str)])
             ys = reduce(lambda x, y: x + y, [self.embedding.alphabet_list[i] for i in
-                                             self.context.generate_random(min=0, max=self.embedding.alphabet_size, nums=nums_str)])
+                                             self.context.generate_random(min=0,
+                                                                          max=self.embedding.alphabet_size,
+                                                                          nums=nums_str)])
             await self.match(self.event.type.match, xs, ys)
             await self.match(self.event.type.match, xs, xs)
             await self.match(self.event.type.match, ys, ys)

@@ -10,9 +10,10 @@ class MessageEvent:
         self.type = EventType()
 
     @staticmethod
-    # def serialization(event, name, value):
-    #     return pickle.dumps({"Type": event, "Name": name, "Value": value})
     def serialization(message):
+        """
+        sent to/(recieved from) servers must be bytes, str, or iterable
+        """
         return pickle.dumps(message)
 
     @staticmethod
