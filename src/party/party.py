@@ -1,7 +1,8 @@
 import asyncio
 import websockets
 import ssl
-from event.event import MessageEvent
+from src.event.event import MessageEvent
+from src.event.message import Message
 from sage.all import *
 import numpy as np
 
@@ -60,18 +61,18 @@ class PartyServer:
         self.data.push(message)
 
     async def calc(self, message, websocket):
-        op2 = self._load_data()["Value"]
-        op1 = self._load_data()["Value"]
-        if message["Type"] == self.event.type.add:
+        op2 = self._load_data().value
+        op1 = self._load_data().value
+        if message.msgType == self.event.type.add:
             result = op1 + op2
 
-        if message["Type"] == self.event.type.sub:
+        if message.msgType == self.event.type.sub:
             result = op1 - op2
 
-        if message["Type"] == self.event.type.mul:
+        if message.msgType == self.event.type.mul:
             result = op1 * op2
 
-        greeting = self.event.serialization(message["Type"], "Result", result)
+        greeting = self.event.serialization(Message(message.msgType, "Result", result))
 
         # Send intermediate results to User
         await websocket.send(greeting)
@@ -80,11 +81,11 @@ class PartyServer:
 
         # Using Sage Math Matrix to overcome data overflow issue
         # Numpy and python int does not support data overflow issue
-        op2 = self.data.pop()["Value"]  # Numpy-Style, size: length_string * alphabet_size
-        op1 = self.data.pop()["Value"]  # Numpy-Style, size: length_string * alphabet_size
+        op2 = self.data.pop().value  # Numpy-Style, size: length_string * alphabet_size
+        op1 = self.data.pop().value  # Numpy-Style, size: length_string * alphabet_size
 
-        # op2 = matrix(self._load_data()["Value"])  # size: length_string * alphabet_size
-        # op1 = matrix(self._load_data()["Value"])  # size: length_string * alphabet_size
+        # op2 = matrix(self._load_data().value)  # size: length_string * alphabet_size
+        # op1 = matrix(self._load_data().value)  # size: length_string * alphabet_size
 
         self.logging.debug(f"[{self.party_id}]-op1 Shares Message \n{op1}")
         self.logging.debug(f"[{self.party_id}]-op2 Shares Message \n{op2}")
@@ -104,20 +105,20 @@ class PartyServer:
 
         self.logging.debug(
             f"Party Server [{self.party_id}] send [{result}] to User from ws://{websocket._host}:{websocket._port}")
-        await websocket.send(self.event.serialization(message["Type"], "Result", result))
+        await websocket.send(self.event.serialization(Message(message.msgType, "Result", result)))
 
     async def string_count(self, message, websocket):
         # 1D-numpy array, size len_char
         # Index of Pattern in the embedding, for example: Love, [11, 40, 47, 30]
-        op2 = self._load_data()["Value"]
+        op2 = self._load_data().value
 
         # 2D-numpy array Target, size len_char * dimension
         # for exampel: Bob Love Alice
-        op1 = self._load_data()["Value"]
+        op1 = self._load_data().value
 
         # 1D-numpy array, size len_char + 1
         # State of automation machine N0 -> N1 -> N2 -> N3 -> ... -> N4
-        auto_machine = [self.context.to_sage_integer(x) for x in self._load_data()["Value"]]
+        auto_machine = [self.context.to_sage_integer(x) for x in self._load_data().value]
 
         self.logging.debug(f"[{self.party_id}]-automation Shares Message[{len(auto_machine)}] {auto_machine}")
         self.logging.debug(f"[{self.party_id}]-op2 Shares Message[{op2.shape}] {op2}")
@@ -149,7 +150,7 @@ class PartyServer:
         self.logging.debug(
             f"Party Server [{self.party_id}] send [{result}] to User from ws://{websocket._host}:{websocket._port}")
 
-        await websocket.send(self.event.serialization(message["Type"], "Result", result))
+        await websocket.send(self.event.serialization(Message(message.msgType, "Result", result)))
 
     async def count(self, message, websocket):
         pass
@@ -166,30 +167,30 @@ class PartyServer:
     async def consumer_handler(self, websocket, path):
         async for message in websocket:
             msg = self.event.deserialization(message)
-            if msg["Type"] == self.event.type.data:
+            if msg.msgType == self.event.type.data:
                 self._save_data(msg)
 
-            if msg["Type"] == self.event.type.add \
-                    or msg["Type"] == self.event.type.sub \
-                    or msg["Type"] == self.event.type.mul:
+            if msg.msgType == self.event.type.add \
+                    or msg.msgType == self.event.type.sub \
+                    or msg.msgType == self.event.type.mul:
                 await self.calc(msg, websocket)
 
-            if msg["Type"] == self.event.type.match:
+            if msg.msgType == self.event.type.match:
                 await self.match(msg, websocket)
 
-            if msg["Type"] == self.event.type.count:
+            if msg.msgType == self.event.type.count:
                 await self.count(msg, websocket)
 
-            if msg["Type"] == self.event.type.string_count:
+            if msg.msgType == self.event.type.string_count:
                 await self.string_count(msg, websocket)
 
-            if msg["Type"] == self.event.type.select:
+            if msg.msgType == self.event.type.select:
                 await self.select(msg, websocket)
 
-            if msg["Type"] == self.event.type.join:
+            if msg.msgType == self.event.type.join:
                 await self.join(msg, websocket)
 
-            if msg["Type"] == self.event.type.search:
+            if msg.msgType == self.event.type.search:
                 await self.search(msg, websocket)
 
     def start(self):

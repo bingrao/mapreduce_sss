@@ -2,8 +2,9 @@
 
 import asyncio
 import websockets
-from share.secret_share import SecretShare
-from event.event import MessageEvent
+from src.share.secret_share import SecretShare
+from src.event.event import MessageEvent
+from src.event.message import Message
 from src.utils.embedding import Embedding
 from functools import partial
 import numpy as np
@@ -63,14 +64,14 @@ class UserClient:
                 """
                 data sent to/(recieved from) servers must be bytes, str, or iterable
                 """
-                message = self.event.serialization(op, "Result", 0)
+                message = self.event.serialization(Message(op, "Result", 0))
                 self.logging.debug(f"User send message message to {uri}")
                 await websocket.send(message)
 
                 greeting = self.event.deserialization(await websocket.recv())
                 self.logging.debug(f"User reci message from {uri}\n")
 
-                recover_shares.append((self.party_idents[idx], greeting["Value"]))
+                recover_shares.append((self.party_idents[idx], greeting.value))
         return recover_shares
 
     async def aa_count_sage_standalone(self, op1='ABCD', op2='ABCD'):
@@ -380,7 +381,7 @@ class UserClient:
         for idx, uri in enumerate(self.partyServers[:nums_share]):
             share = secret_shares[idx]
             async with websockets.connect(uri) as websocket:
-                message = self.event.serialization(self.event.type.data, label, share)
+                message = self.event.serialization(Message(self.event.type.data, label, share))
                 # data sent to/(recieved from) servers must be bytes, str, or iterable
                 await websocket.send(message)
 
@@ -404,6 +405,7 @@ class UserClient:
     async def producer_handler(self):
 
         start = time.time()
+
         await self.test_match()
         await self.test_calc()
         await self.aa_count_sage_standalone()
