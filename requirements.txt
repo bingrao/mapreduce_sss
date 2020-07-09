@@ -4,3 +4,4 @@ numpy~=1.18.5
 websockets~=8.1
 yaml
 sage~=9.0
+pandas~=1.0.5

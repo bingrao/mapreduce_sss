@@ -25,15 +25,17 @@ class MathematicalComputation(AbstractOperation):
 
         if op == self.event.type.add:
             nums_server = self.poly_order + 1
-            expected = op1 + op2
+            expected = round(op1 + op2, 4)
             op_str = "+"
+
         if op == self.event.type.sub:
             nums_server = self.poly_order + 1
-            expected = op1 - op2
+            expected = round(op1 - op2, 4)
             op_str = "-"
+
         if op == self.event.type.mul:
             nums_server = 2 * self.poly_order + 1
-            expected = op1 * op2
+            expected = round(op1 * op2, 4)
             op_str = "*"
         assert nums_server <= self.nums_party
 
@@ -54,13 +56,13 @@ class MathematicalComputation(AbstractOperation):
         await self.distribute("op2", op2_shares, nums_share)
 
         recover_shares = await self.execute_command(op, nums_server=nums_share, nums_share=nums_share)
-        result = round(self.context.interpolate(recover_shares, overflow=False), 0)
+        result = round(self.context.interpolate(recover_shares, overflow=False), 4)
 
         self.logging.debug(f"Using data {recover_shares}")
         self.logging.info(
             f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}, diff {expected - result}")
 
     async def test_calc(self):
-        await self.calc(self.event.type.sub, 15, 16)
-        await self.calc(self.event.type.add, 2, 3)
-        await self.calc(self.event.type.mul, 8000000000, 5600000000)
+        await self.calc(self.event.type.sub, 15.6, 16.7)
+        await self.calc(self.event.type.add, 2.3, 3.5)
+        await self.calc(self.event.type.mul, 8.8, 9.5)

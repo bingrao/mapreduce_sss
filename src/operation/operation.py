@@ -5,6 +5,7 @@ from src.event.message import DataMessage, ControlMessage
 from src.utils.embedding import Embedding
 from functools import partial
 import numpy as np
+import pandas as pd
 
 
 class AbstractOperation:
@@ -23,6 +24,10 @@ class AbstractOperation:
         self.poly_order = poly_order
         self.event = MessageEvent()
         self.embedding = Embedding()  # embedding layer for string or numberic
+
+    def _load_csv_data(self, path):
+        self.logging.debug(f"Load CSV file from {path}")
+        return pd.read_csv(path, engine='c')
 
     def create_shares(self, target, poly_order, nums_share, idents_share):
 
