@@ -19,10 +19,11 @@ class StringComputation(AbstractOperation):
         nums_share = self.nums_party
         idents_share = self.party_idents[:nums_share]
 
-        # nums_server = 2 * len(op1) + 1
-        nums_server = nums_share
+        nums_server = 2 * len(op1) + 1
+        # nums_server = nums_share
         assert nums_server <= nums_share, \
-            f"Recover {op1, op2} need at least {nums_server} servers (<= {nums_share})"
+            f"Recover {op1, op2} need at least {nums_server} servers (> {nums_share}), " \
+            f"please add more participant servers"
 
         op1_shares = self.create_shares(op1, self.poly_order, nums_share, idents_share)
         await self.distribute("op1", op1_shares, nums_share)
@@ -254,7 +255,7 @@ class StringComputation(AbstractOperation):
 
     async def test_match(self):
         from functools import reduce
-        nums_str = 5
+        nums_str = 7
         for i in range(self.embedding.alphabet_size):
             xs = reduce(lambda x, y: x + y, [self.embedding.alphabet_list[i] for i in
                                              self.context.generate_random(min=0,
