@@ -206,15 +206,20 @@ class StringComputation(AbstractOperation):
         assert max_nums_server <= nums_share, \
             f"The max nums of servers [{max_nums_server}] needed to recover data is less than {nums_share}"
 
-        func_shares = partial(self.share_engine.create_shares,
-                              nums_shares=nums_share,
-                              idents_shares=idents_share)
+        # func_shares = partial(self.share_engine.create_shares,
+        #                       nums_shares=nums_share,
+        #                       idents_shares=idents_share)
 
         # ********************** State autormation machine
         automation_machine = [1 if x == 0 else 0 for x in range(nums_node)]
-        automation_shares_vec = np.array([func_shares(secret=x, poly_order=idx + 2 * self.poly_order)
+        # automation_shares_vec = np.array([func_shares(secret=x, poly_order=idx + 2 * self.poly_order)
+        #                                   for idx, x in enumerate(automation_machine)]) \
+        #     .reshape((len(automation_machine), nums_share))
+
+        automation_shares_vec = np.array([self.create_shares(x, idx + 2 * self.poly_order, nums_share, idents_share)
                                           for idx, x in enumerate(automation_machine)]) \
             .reshape((len(automation_machine), nums_share))
+
         automation_shares = automation_shares_vec.transpose()  # 2D numpy array: nums_share * nums_node
 
         await self.distribute("state", automation_shares, nums_share)

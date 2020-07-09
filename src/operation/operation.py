@@ -9,7 +9,7 @@ import pandas as pd
 
 
 class AbstractOperation:
-    def __init__(self, ctx, poly_order=1):
+    def __init__(self, ctx, poly_order: int = 1):
         self.context = ctx
         self.logging = ctx.logger
         self.zp = ctx.zp  # Finite Field
@@ -29,19 +29,22 @@ class AbstractOperation:
         self.logging.debug(f"Load CSV file from {path}")
         return pd.read_csv(path, engine='c')
 
-    def create_shares(self, target, poly_order, nums_share, idents_share):
+    def numeric_create_shares(self, target, poly_order, nums_share, idents_share):
+        return self.share_engine.create_shares(secret=target, poly_order=poly_order,
+                                               nums_shares=nums_share, idents_shares=idents_share)
 
+    def string_create_shares(self, target, poly_order, nums_share, idents_share):
         # Partial function for shares create
-        func_shares = partial(self.share_engine.create_shares,
-                              poly_order=poly_order,
-                              nums_shares=nums_share,
-                              idents_shares=idents_share)
         # 2D numpy arraw, size: length_string * alphabet_size
         tgt_vector = self.embedding.to_vector(target)
         tgt_vector_size = tgt_vector.shape
 
         # 3D numpy array, Size: length_string * alphabet_size * nums_shares
-        tgt_shares_vec = np.array([func_shares(x) for x in tgt_vector.ravel()], dtype=np.int32) \
+        tgt_shares_vec = np.array([self.share_engine.create_shares(secret=x,
+                                                                   poly_order=poly_order,
+                                                                   nums_shares=nums_share,
+                                                                   idents_shares=idents_share)
+                                   for x in tgt_vector.ravel()], dtype=np.int32) \
             .reshape((tgt_vector_size[0], tgt_vector_size[1], nums_share))
 
         # A list of 2D numpy array (size: length_string * alphabet_size) containing shares for each party servers
@@ -54,6 +57,14 @@ class AbstractOperation:
                 share = str(share).replace('\n', '')
                 self.logging.debug(f"[{target}-{vec}]-[{idx}] distribute shares: {share}")
         return tgt_shares
+
+    def create_shares(self, target, poly_order, nums_share, idents_share):
+        if isinstance(target, str):
+            return self.string_create_shares(target, poly_order, nums_share, idents_share)
+        elif isinstance(target, (int, float, complex)) and not isinstance(target, bool):
+            return self.numeric_create_shares(target, poly_order, nums_share, idents_share)
+        else:
+            raise TypeError(f"The input type [{type(target)}] does not support")
 
     async def distribute(self, label, secret_shares, nums_share):
         """

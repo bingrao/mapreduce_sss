@@ -40,18 +40,14 @@ class MathematicalComputation(AbstractOperation):
         assert nums_server <= self.nums_party
 
         # Create secret shares for op1
-        op1_shares = self.share_engine.create_shares(secret=op1,
-                                                     poly_order=self.poly_order,
-                                                     nums_shares=nums_share,
-                                                     idents_shares=idents_share)
+        op1_shares = self.create_shares(target=op1, poly_order=self.poly_order,
+                                        nums_share=nums_share, idents_share=idents_share)
         # Send shares data to all participant servers
         await self.distribute("op1", op1_shares, nums_share)
 
         # Create secret shares for op2
-        op2_shares = self.share_engine.create_shares(secret=op2,
-                                                     poly_order=self.poly_order,
-                                                     nums_shares=nums_share,
-                                                     idents_shares=idents_share)
+        op2_shares = self.create_shares(target=op2, poly_order=self.poly_order,
+                                        nums_share=nums_share, idents_share=idents_share)
         # Send shares data to all participant servers
         await self.distribute("op2", op2_shares, nums_share)
 
