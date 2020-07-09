@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+from src.event.event import MessageEvent
 from src.operation.math import MathematicalComputation
 from src.operation.string import StringComputation
 from src.operation.dataframe import DataFrameComputation
@@ -11,6 +12,7 @@ class UserClient:
     def __init__(self, ctx, poly_order=1):
         self.context = ctx
         self.logging = ctx.logger
+        self.event = MessageEvent()
         self.math_op = MathematicalComputation(ctx, poly_order)
         self.str_op = StringComputation(ctx, poly_order)
         self.df_op = DataFrameComputation(ctx, poly_order)

@@ -1,14 +1,7 @@
 # WS client example
-from src.operation.op import AbstractOperation
-import asyncio
-import websockets
-from src.share.secret_share import SecretShare
-from src.event.event import MessageEvent
-from src.event.message import DataMessage, ControlMessage
-from src.utils.embedding import Embedding
+from src.operation.operation import AbstractOperation
 from functools import partial
 import numpy as np
-import time
 
 
 class StringComputation(AbstractOperation):
