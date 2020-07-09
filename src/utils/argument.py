@@ -14,9 +14,22 @@ def party_opts(parser):
 
 def client_opts(parser):
     parser.add_argument('-nums_party', '--nums_party', type=int, default=5)
-    parser.add_argument('-operation', '--operation', type=str, default='=', choices=['+', '-', '=', '*'])
-    parser.add_argument('-op1', '--op1', type=str, default="")
-    parser.add_argument('-op2', '--op2', type=str, default="")
+
+    # Mathematical Computation
+    group = parser.add_argument_group('Mathematical Computation')
+    group.add_argument('-math_op', '--math_op', type=str, default='=', choices=['+', '-', '=', '*'])
+    group.add_argument('-op1', '--op1', type=int, default=1)
+    group.add_argument('-op2', '--op2', type=int, default=1)
+
+    group = parser.add_argument_group('String Operation')
+    group.add_argument('-str_op', '--str_op', type=str, default='match', choices=['match', 'count'])
+    group.add_argument('-str1', '--str1', type=str, default=1)
+    group.add_argument('-str2', '--str2', type=str, default=1)
+
+    group = parser.add_argument_group('Dataframe (Table/Database) Operation')
+    group.add_argument('-data', '--data', type=str, default="data/employee-attrition.csv")
+    group.add_argument('-df_op', '--df_op', type=str, default='match',
+                       choices=['match', 'join', 'selection', 'range_search'])
 
 
 def get_default_argument(desc='default'):

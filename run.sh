@@ -3,8 +3,8 @@
 function help() {
      echo "Usage:  $0 target[party|client] nums[nums_server|nums_party] configFile" >&2
      echo "Example: "
-     echo "       - bash run.sh party config/default_config.yml"
-     echo "       - bash run.sh client config/default_config.yml"
+     echo "       - bash run.sh party 15 config/default_config.yml"
+     echo "       - bash run.sh client 15 config/default_config.yml"
 }
 
 if [ "$#" -ne 3 ] ; then
@@ -26,9 +26,11 @@ BinPath=${RootPath}/bin; [ -d "$BinPath" ] || mkdir -p "$BinPath"
 SrcPath=${RootPath}/src; [ -d "$SrcPath" ] || mkdir -p "$SrcPath"
 LogPath=${RootPath}/logs; [ -d "$LogPath" ] || mkdir -p "$LogPath"
 CfgPath=${RootPath}/config; [ -d "$CfgPath" ] || mkdir -p "$CfgPath"
+DataPath=${RootPath}/data; [ -d "$DataPath" ] || mkdir -p "$DataPath"
 CurrentDate=$(date +%F)
 #ConfigFile=${CfgPath}/default_config.yml
 LogFile=${LogPath}/${CurrentDate}.log
+AttritionDataPath=${DataPath}/employee-attrition.csv
 
 case ${target} in
    "party")
@@ -37,7 +39,7 @@ case ${target} in
       ;;
    "client")
       set -x
-      python "${SrcPath}"/client.py -config "$configFile" -project_dir "${RootPath}" -project_log "${LogFile}" -nums_party ${nums_party}
+      python "${SrcPath}"/client.py -config "$configFile" -data "${AttritionDataPath}" -project_dir "${RootPath}" -project_log "${LogFile}" -nums_party ${nums_party}
       ;;
    *)
       echo "The wrong input paramters"
