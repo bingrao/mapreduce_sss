@@ -2,9 +2,9 @@
 from src.operation.operation import AbstractOperation
 
 
-class MathematicalComputation(AbstractOperation):
+class Numeric(AbstractOperation):
     def __init__(self, ctx, poly_order=1):
-        super(MathematicalComputation, self).__init__(ctx, poly_order)
+        super(Numeric, self).__init__(ctx, poly_order)
 
     async def calc(self, op, op1: int = 13, op2: int = 5):
         """

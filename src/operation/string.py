@@ -1,12 +1,11 @@
 # WS client example
 from src.operation.operation import AbstractOperation
-from functools import partial
 import numpy as np
 
 
-class StringComputation(AbstractOperation):
+class String(AbstractOperation):
     def __init__(self, ctx, poly_order=1):
-        super(StringComputation, self).__init__(ctx, poly_order)
+        super(String, self).__init__(ctx, poly_order)
 
     def get_nums_server(self, x):
         return (2 + x) * self.poly_order + 1

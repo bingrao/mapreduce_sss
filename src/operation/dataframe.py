@@ -1,14 +1,14 @@
 # WS client example
-from src.operation.math import MathematicalComputation
-from src.operation.string import StringComputation
+from src.operation.numeric import Numeric
+from src.operation.string import String
 from collections import ChainMap
 import numpy as np
 import pandas as pd
 
 
-class DataFrameComputation(MathematicalComputation, StringComputation):
+class DataFrame(Numeric, String):
     def __init__(self, ctx, poly_order=1):
-        super(DataFrameComputation, self).__init__(ctx, poly_order)
+        super(DataFrame, self).__init__(ctx, poly_order)
         # self.data_df =
 
     def category_attr_label_encode(self, data_input, nums_limit=10):

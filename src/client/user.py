@@ -3,9 +3,9 @@
 import asyncio
 import time
 from src.event.event import MessageEvent
-from src.operation.math import MathematicalComputation
-from src.operation.string import StringComputation
-from src.operation.dataframe import DataFrameComputation
+from src.operation.numeric import Numeric
+from src.operation.string import String
+from src.operation.dataframe import DataFrame
 
 
 class UserClient:
@@ -13,9 +13,9 @@ class UserClient:
         self.context = ctx
         self.logging = ctx.logger
         self.event = MessageEvent()
-        self.math_op = MathematicalComputation(ctx, poly_order)
-        self.str_op = StringComputation(ctx, poly_order)
-        self.df_op = DataFrameComputation(ctx, poly_order)
+        self.math_op = Numeric(ctx, poly_order)
+        self.str_op = String(ctx, poly_order)
+        self.df_op = DataFrame(ctx, poly_order)
 
     async def producer_handler(self):
 
