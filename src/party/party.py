@@ -61,16 +61,17 @@ class PartyServer:
         share, ident, commits = message.value
 
         if self.context.vss == 'Feldman' and commits is not None:
-            self.logging.info(f"Server[{self.party_id}-{ident}] holds Share [{share}] with commits {commits}, "
+            self.logging.debug(f"Server[{self.party_id}-{ident}] holds Share [{share}] with commits {commits}, "
                               f"p={self.context.p}, g={self.context.g}")
             share_vss = self.context.g ** Integer(share) % self.context.p
             commits_vss = prod([commit ** (ident ** i) for i, commit in enumerate(commits)]) % self.context.p
-            self.logging.info(f"Server[{self.party_id}-{ident}] share_vss [{share_vss}] == commits_vss [{commits_vss}]")
-            assert share_vss == commits_vss
+            assert share_vss == commits_vss, f"Server[{self.party_id}-{ident}] share_vss [{share_vss}] == commits_vss [{commits_vss}]"
         elif self.context.vss == 'Pedersen' and commits is not None:
-            share_vss = self.context.g ** share % self.context.p
+            self.logging.debug(f"Server[{self.party_id}-{ident}] holds Share [{share}] with commits {commits}, "
+                               f"p={self.context.p}, g={self.context.g}")
+            share_vss = self.context.g ** Integer(share) % self.context.p
             commits_vss = prod([commit ** (ident ** i) for i, commit in enumerate(commits)]) % self.context.p
-            assert share_vss == commits_vss
+            assert share_vss == commits_vss, f"Server[{self.party_id}-{ident}] share_vss [{share_vss}] == commits_vss [{commits_vss}]"
         else:
             pass
         self.data.push(message)
