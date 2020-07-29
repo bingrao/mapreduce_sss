@@ -10,7 +10,7 @@ class SecretShare:
         self.zp = ctx.zp
 
     def feldman_vss(self, coefficients):
-        return [self.context.g ** coef for coef in coefficients]
+        return [Integer(self.context.g ** coef) % self.context.p for coef in coefficients]
 
     def pedersen_vss(self, coefficients):
         return [self.context.g ** coef for coef in coefficients]
