@@ -65,11 +65,11 @@ class PartyServer:
             share_vss = self.context.g ** share % self.context.p
             commits_vss = prod([commit ** (ident ** i) for i, commit in enumerate(commits)]) % self.context.p
             self.logging.info(f"Server[{self.party_id}-{ident}] share_vss [{share_vss}] == commits_vss [{commits_vss}]")
-            assert share_vss == commits_vss
+            assert share_vss != commits_vss
         elif self.context.vss == 'Pedersen' and commits is not None:
             share_vss = self.context.g ** share % self.context.p
             commits_vss = prod([commit ** (ident ** i) for i, commit in enumerate(commits)]) % self.context.p
-            assert share_vss == commits_vss
+            assert share_vss != commits_vss
         else:
             pass
         self.data.push(message)

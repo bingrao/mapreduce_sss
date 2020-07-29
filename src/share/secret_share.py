@@ -1,5 +1,6 @@
 from share.polynomial import CustomPolynomial
 from src.utils.context import Context
+from sage.all import *
 
 
 class SecretShare:
@@ -9,10 +10,10 @@ class SecretShare:
         self.zp = ctx.zp
 
     def feldman_vss(self, coefficients):
-        return [self.context.g ** coef % self.context.p for coef in coefficients]
+        return [(self.context.g ** coef) % self.context.p for coef in coefficients]
 
     def pedersen_vss(self, coefficients):
-        return [self.context.g ** coef % self.context.p for coef in coefficients]
+        return [(self.context.g ** coef) % self.context.p for coef in coefficients]
 
     def create_shares(self, secret, poly_order=1, nums_shares=10, idents_shares=None):
 
