@@ -72,7 +72,7 @@ class Context:
         self.q = 2 ** 12
         self.p = random_prime(self.q, proof=False, lbound=self.q - 3)
         self.g = self.largest_prime_factor(self.p)
-        self.zp = GF()  # Finite Field
+        self.zp = GF(self.p)  # Finite Field
 
     @staticmethod
     def largest_prime_factor(n):
