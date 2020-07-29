@@ -74,8 +74,14 @@ class AbstractOperation:
             secret_shares: a list of secret shares with size [[nums_share]]
             nums_share: the number of partipant servers will recieve data
         """
+        if self.context.vss != 'None':
+            ss_shares = secret_shares[0]
+            vss_commits = secret_shares[1]
+        else:
+            vss_commits = None
+
         for idx, uri in enumerate(self.partyServers[:nums_share]):
-            share = secret_shares[idx]
+            share = ss_shares[idx], self.party_idents[idx], vss_commits
             async with websockets.connect(uri) as websocket:
                 message = self.event.serialization(DataMessage(self.event.type.data, label, share))
                 # data sent to/(recieved from) servers must be bytes, str, or iterable

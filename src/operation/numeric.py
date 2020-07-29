@@ -59,6 +59,6 @@ class Numeric(AbstractOperation):
             f"Result[{op1} {op_str} {op2}]: expected {expected}, real {result}, diff {expected - result}")
 
     async def test_calc(self):
-        await self.calc(self.event.type.sub, 15.6, 16.7)
-        await self.calc(self.event.type.add, 2.3, 3.5)
-        await self.calc(self.event.type.mul, 8.8, 9.5)
+        await self.calc(self.event.type.sub, 15, 16)
+        await self.calc(self.event.type.add, 2, 3)
+        await self.calc(self.event.type.mul, 8, 9)

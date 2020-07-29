@@ -8,6 +8,12 @@ class SecretShare:
         self.logging = ctx.logger
         self.zp = ctx.zp
 
+    def feldman_vss(self, coefficients):
+        return [self.context.g ** coef for coef in coefficients]
+
+    def pedersen_vss(self, coefficients):
+        return [self.context.g ** coef for coef in coefficients]
+
     def create_shares(self, secret, poly_order=1, nums_shares=10, idents_shares=None):
 
         # Cloud identifiers used to generate corresponding secret shares
@@ -27,7 +33,12 @@ class SecretShare:
         self.logging.debug(f"Participants  Idents: {list(x_values)}")
         self.logging.debug(f"Corresponding Shares: {shares}\n")
 
-        return shares
+        if self.context.vss == 'Feldman':
+            return shares, self.feldman_vss(coefficients)
+        elif self.context.vss == 'Pedersen':
+            return shares, self.feldman_vss(coefficients)
+        else:
+            return shares
 
 
 if __name__ == "__main__":

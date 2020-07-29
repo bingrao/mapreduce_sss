@@ -25,6 +25,9 @@ class Context:
         # A dictionary of Config Parameters
         self.config = get_default_argument(desc=self.desc)
 
+        # Verifiable Secret Sharing
+        self.vss = self.config['vss']
+
         self.project_dir = self.config['project_dir'] if self.config['project_dir'] != "" \
             else str(BASE_DIR)
 
@@ -66,10 +69,20 @@ class Context:
 
         self.init_rng(seed=0)
         warnings.filterwarnings('ignore')
-        self.p = 2
-        self.n = 12
-        self.q = self.p ** self.n
-        self.zp = GF(random_prime(self.q, proof=False, lbound=self.q - 3))  # Finite Field
+        self.q = 2 ** 12
+        self.p = random_prime(self.q, proof=False, lbound=self.q - 3)
+        self.g = self.largest_prime_factor(self.p)
+        self.zp = GF()  # Finite Field
+
+    @staticmethod
+    def largest_prime_factor(n):
+        i = 2
+        while i * i <= n:
+            if n % i:
+                i += 1
+            else:
+                n //= i
+        return n
 
     @staticmethod
     def init_rng(seed=0):

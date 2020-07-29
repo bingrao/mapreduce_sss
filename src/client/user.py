@@ -21,11 +21,11 @@ class UserClient:
 
         start = time.time()
 
-        await self.str_op.test_match()
+        # await self.str_op.test_match()
         await self.math_op.test_calc()
-        await self.str_op.aa_count_sage_standalone()
-        await self.str_op.string_count(self.event.type.string_count, 'Bob Love ALice', 'L')
-        await self.str_op.match(self.event.type.match, "ABCed", "ABCed")
+        # await self.str_op.aa_count_sage_standalone()
+        # await self.str_op.string_count(self.event.type.string_count, 'Bob Love ALice', 'L')
+        # await self.str_op.match(self.event.type.match, "ABCed", "ABCed")
 
         end = time.time()
         self.logging.info(f"The execution time {end - start}")

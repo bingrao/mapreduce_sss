@@ -6,6 +6,8 @@ def config_opts(parser):
     parser.add_argument('-project_dir', '--project_dir', type=str, default='')
     parser.add_argument('-project_log', '--project_log', type=str, default='')
     parser.add_argument('-debug', '--debug', type=bool, default=False)
+    parser.add_argument('-vss', '--vss', type=str, default="Feldman",
+                        choices=['None', 'Feldman', 'Pedersen'])
 
 
 def party_opts(parser):
