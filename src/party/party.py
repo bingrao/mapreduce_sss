@@ -58,7 +58,7 @@ class PartyServer:
         return self.data.pop()
 
     def _save_data(self, message):
-        share, ident, commits = message
+        share, ident, commits = message.value
 
         if self.context.vss == 'Feldman' and commits is not None:
             self.logging.info(f"Server[{self.party_id}-{ident}] holds Share [{share}] with commits {commits}")
@@ -72,11 +72,11 @@ class PartyServer:
             assert share_vss != commits_vss
         else:
             pass
-        self.data.push(share)
+        self.data.push(message)
 
     async def calc(self, message, websocket):
-        op2 = self._load_data().value
-        op1 = self._load_data().value
+        op2 = self._load_data().value[0]
+        op1 = self._load_data().value[0]
         if message.msgType == self.event.type.add:
             result = op1 + op2
 
